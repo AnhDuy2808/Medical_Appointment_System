@@ -1,0 +1,26 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Thanh Toán{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+  <h2 class="my-4">Thanh Toán Lịch Hẹn</h2>
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Thông Tin Lịch Hẹn</h5>
+          <p class="card-text"><strong>Mã vé:</strong> {{ ticket.uuid }}</p>
+          <p class="card-text"><strong>Bác sĩ:</strong> {{ ticket.ship.doctor.first_name }} {{ ticket.ship.doctor.last_name }}</p>
+          <p class="card-text"><strong>Thời gian:</strong> {{ ticket.ship.work_date }} {{ ticket.appointment_time }}</p>
+          <p class="card-text"><strong>Trạng thái:</strong> {{ ticket.status }}</p>
+          <form method="POST" action="{{ url_for('payment', ticket_id=ticket.id) }}">
+            <button type="submit" class="btn btn-primary w-100 mt-3">Thanh Toán</button>
+          </form>
+          <a href="{{ url_for('home') }}" class="btn btn-secondary mt-2">Hủy</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

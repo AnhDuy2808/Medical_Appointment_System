@@ -1,0 +1,32 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Đặt Lịch Khám - {{ doctor.first_name }} {{ doctor.last_name }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+  <h2>Đặt Lịch Khám Với Bác Sĩ {{ doctor.first_name }} {{ doctor.last_name }}</h2>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% if ships %}
+  <form method="POST" action="{{ url_for('book_appointment', doctor_id=doctor.id) }}">
+    <div class="form-group">
+      <label for="ship_id">Chọn khung giờ</label>
+      <select class="form-control" id="ship_id" name="ship_id" required>
+        {% for ship in ships %}
+        <option value="{{ ship.id }}">{{ ship.start_time }} - {{ ship.end_time }} ({{ ship.work_date }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Đặt Lịch</button>
+  </form>
+  {% else %}
+  <p class="text-danger">Không có lịch làm việc nào hôm nay.</p>
+  {% endif %}
+  <a href="{{ url_for('search_doctor') }}" class="btn btn-secondary mt-3">Quay Lại</a>
+</div>
+{% endblock %}

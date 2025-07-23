@@ -1,0 +1,67 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2>Bác Sĩ</h2>
+  {% if doctors %}
+  <div class="row">
+    {% for doctor in doctors %}
+    <div class="col-md-4 mb-3">
+      <div class="card">
+        {% if doctor.avatar %}
+        <img src="{{ doctor.avatar }}" class="card-img-top" alt="{{ doctor.first_name }} {{ doctor.last_name }}" style="max-height: 200px; object-fit: cover;" onerror="this.src='/static/images/default_avatar.jpg'">
+        {% else %}
+        <img src="/static/images/default_avatar.jpg" class="card-img-top" alt="Default Avatar" style="max-height: 200px; object-fit: cover;">
+        {% endif %}
+        <div class="card-body">
+          <h5 class="card-title">{{ doctor.first_name }} {{ doctor.last_name }}</h5>
+          <p class="card-text">
+            {% if doctor.doctor_departments %}
+              {% for dd in doctor.doctor_departments %}
+                Khoa: {{ dd.department.name }}<br>
+              {% endfor %}
+            {% else %}
+              Chưa có khoa được gán
+            {% endif %}
+          </p>
+          <a href="{{ url_for('book_appointment', doctor_id=doctor.id) }}" class="btn btn-primary">Đặt Lịch</a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-warning">
+    Hiện tại không có bác sĩ nào được hiển thị. Vui lòng thử lại sau!
+  </div>
+  {% endif %}
+
+  <h2>Bệnh viện</h2>
+  {% if medical_centers %}
+  <div class="row">
+    {% for medical_center in medical_centers %}
+    <div class="col-md-4 mb-3">
+      <div class="card">
+        {% if medical_center.cover_img %}
+        <img src="{{ medical_center.cover_img }}" class="card-img-top" alt="{{ medical_center.name }}" style="max-height: 200px; object-fit: cover;" onerror="this.src='/static/images/default_hospital.jpg'">
+        {% else %}
+        <img src="/static/images/default_hospital.jpg" class="card-img-top" alt="Default Hospital" style="max-height: 200px; object-fit: cover;">
+        {% endif %}
+        <div class="card-body">
+          <h5 class="card-title">{{ medical_center.name }}</h5>
+          <p class="card-text">{{ medical_center.description|truncate(50) }}</p>
+          <a href="{{ url_for('medical_center_details', medical_center_id=medical_center.id) }}" class="btn btn-primary">Xem Chi Tiết</a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-warning">
+    Hiện tại không có trung tâm y tế nào được hiển thị. Vui lòng thử lại sau!
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

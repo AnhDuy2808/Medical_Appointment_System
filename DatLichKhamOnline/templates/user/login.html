@@ -1,0 +1,32 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Đăng Nhập{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title text-center mb-4">Đăng Nhập</h2>
+          <form method="POST" action="{{ url_for('user_login') }}">
+            <div class="mb-3">
+              <label for="username" class="form-label">Tên Đăng Nhập</label>
+              <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+            <div class="mb-3">
+              <label for="password" class="form-label">Mật Khẩu</label>
+              <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mb-3">Đăng Nhập</button>
+            <div class="text-center">
+              <a href="{{ url_for('register') }}" class="text-decoration-none">Đăng Ký</a> | 
+              <a href="{{ url_for('forgot_password') }}" class="text-decoration-none">Quên Mật Khẩu?</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

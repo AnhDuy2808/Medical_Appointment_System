@@ -1,0 +1,33 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Danh Sách Bệnh Viện{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+  <h2>Danh Sách Bệnh Viện</h2>
+  {% if medical_centers %}
+  <div class="row">
+    {% for medical_center in medical_centers %}
+    <div class="col-md-4 mb-3">
+      <div class="card">
+        {% if medical_center.cover_img %}
+        <img src="{{ medical_center.cover_img }}" class="card-img-top" alt="{{ medical_center.name }}" style="max-height: 200px; object-fit: cover;" onerror="this.src='/static/images/default_hospital.jpg'">
+        {% else %}
+        <img src="/static/images/default_hospital.jpg" class="card-img-top" alt="Default Hospital" style="max-height: 200px; object-fit: cover;">
+        {% endif %}
+        <div class="card-body">
+          <h5 class="card-title">{{ medical_center.name }}</h5>
+          <p class="card-text">{{ medical_center.description|truncate(50) }}</p>
+          <a href="{{ url_for('medical_center_details', medical_center_id=medical_center.id) }}" class="btn btn-primary">Xem Chi Tiết</a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-warning">
+    Không tìm thấy bệnh viện nào.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

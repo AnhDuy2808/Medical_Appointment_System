@@ -1,0 +1,50 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Đăng Ký{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title text-center mb-4">Đăng Ký</h2>
+          <form method="POST" action="{{ url_for('register') }}">
+            <div class="mb-3">
+              <label for="first_name" class="form-label">Họ</label>
+              <input type="text" class="form-control" id="first_name" name="first_name" required>
+            </div>
+            <div class="mb-3">
+              <label for="last_name" class="form-label">Tên</label>
+              <input type="text" class="form-control" id="last_name" name="last_name" required>
+            </div>
+            <div class="mb-3">
+              <label for="username" class="form-label">Tên Đăng Nhập</label>
+              <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+            <div class="mb-3">
+              <label for="password" class="form-label">Mật Khẩu</label>
+              <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            <div class="mb-3">
+              <label for="role" class="form-label">Vai trò</label>
+              <select class="form-select" id="role" name="role">
+                <option value="user">Người dùng</option>
+                <option value="doctor">Bác sĩ</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mb-3">Đăng Ký</button>
+            <div class="text-center">
+              <a href="{{ url_for('user_login') }}" class="text-decoration-none">Đã có tài khoản? Đăng Nhập</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
