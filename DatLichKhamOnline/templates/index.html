@@ -3,7 +3,7 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container my-5">
   <h2>Bác Sĩ</h2>
   {% if doctors %}
   <div class="row">
@@ -38,7 +38,7 @@
   </div>
   {% endif %}
 
-  <h2>Bệnh viện</h2>
+  <h2 class="my-3">Bệnh viện</h2>
   {% if medical_centers %}
   <div class="row">
     {% for medical_center in medical_centers %}

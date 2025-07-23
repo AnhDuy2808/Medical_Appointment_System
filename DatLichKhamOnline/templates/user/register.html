@@ -30,13 +30,6 @@
               <label for="email" class="form-label">Email</label>
               <input type="email" class="form-control" id="email" name="email" required>
             </div>
-            <div class="mb-3">
-              <label for="role" class="form-label">Vai trò</label>
-              <select class="form-select" id="role" name="role">
-                <option value="user">Người dùng</option>
-                <option value="doctor">Bác sĩ</option>
-              </select>
-            </div>
             <button type="submit" class="btn btn-primary w-100 mb-3">Đăng Ký</button>
             <div class="text-center">
               <a href="{{ url_for('user_login') }}" class="text-decoration-none">Đã có tài khoản? Đăng Nhập</a>

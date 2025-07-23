@@ -1,7 +1,7 @@
 import utils
 from DatLichKhamOnline import app
 from flask import render_template, request, flash, redirect, url_for, session
-from models import User, MedicalCenter, DoctorDepartment, DoctorMedicalCenter, Ship, Ticket, db
+from models import User, MedicalCenter, DoctorDepartment, Department, DoctorMedicalCenter, Ship, Ticket, db, UserRole
 from datetime import datetime
 
 
@@ -15,22 +15,27 @@ def home():
 @app.route("/search")
 def search():
     query = request.args.get('q', '').lower()
-    doctors = User.query.filter_by(role="doctor").filter(
-        User.first_name.ilike(f'%{query}%') | User.last_name.ilike(f'%{query}%')
-    ).all()
+    # Search for doctors by name or specialty
+    doctors = User.query.join(DoctorDepartment).join(Department).filter(
+        User.role == "doctor",
+        (User.first_name.ilike(f'%{query}%') | User.last_name.ilike(f'%{query}%') | Department.name.ilike(f'%{query}%'))
+    ).distinct().all()
+    # Search for medical centers by name or description
     medical_centers = MedicalCenter.query.filter(
         MedicalCenter.name.ilike(f'%{query}%') | MedicalCenter.description.ilike(f'%{query}%')
     ).all()
+    print(f"Search query: {query}, Doctors found: {[d.first_name + ' ' + d.last_name for d in doctors]}, Medical Centers found: {[mc.name for mc in medical_centers]}")
     return render_template('index.html', doctors=doctors, medical_centers=medical_centers)
 
 
 @app.route("/search_doctor")
 def search_doctor():
-    query = request.args.get('q', '')
-    doctors = User.query.filter_by(role="doctor").filter(
-        User.first_name.ilike(f'%{query}%') | User.last_name.ilike(f'%{query}%')
-    ).all()
-    print(f"Found {len(doctors)} doctors: {[doctor.__str__() for doctor in doctors]}")  # Debug output
+    query = request.args.get('q', '').lower()
+    doctors = User.query.join(DoctorDepartment).join(Department).filter(
+        User.role == "doctor",
+        (User.first_name.ilike(f'%{query}%') | User.last_name.ilike(f'%{query}%') | Department.name.ilike(f'%{query}%'))
+    ).distinct().all()
+    print(f"Found {len(doctors)} doctors: {[doctor.__str__() for doctor in doctors]}")
     return render_template('doctor/doctor_list.html', doctors=doctors)
 
 
@@ -74,14 +79,13 @@ def register():
         password = request.form["password"]
         email = request.form["email"]
         avatar = request.form.get("avatar", "default_avatar.jpg")
-        role = request.form.get("role", "user")
 
         if User.query.filter_by(username=username).first():
             flash("Tên đăng nhập đã tồn tại.", "danger")
             return redirect(url_for("register"))
 
         new_user = User(first_name=first_name, last_name=last_name, username=username, password=password, email=email,
-                        avatar=avatar, role=role)
+                        avatar=avatar, role=UserRole.USER)
         db.session.add(new_user)
         db.session.commit()
         flash("Đăng ký thành công! Vui lòng đăng nhập.", "success")
