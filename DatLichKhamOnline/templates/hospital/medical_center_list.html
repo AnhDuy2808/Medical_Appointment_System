@@ -1,33 +1,38 @@
 {% extends 'layout/base.html' %}
 
-{% block title %}Danh Sách Bệnh Viện{% endblock %}
+{% block title %}Danh Sách Bệnh Viện & Trung Tâm Y Tế{% endblock %}
 
 {% block content %}
 <div class="container my-5">
-  <h2>Danh Sách Bệnh Viện</h2>
+  <h2 class="text-center mb-4">Các Trung Tâm Y Tế & Bệnh Viện</h2>
+  <p class="text-center text-muted mb-5">Khám phá các bệnh viện và trung tâm y tế hàng đầu với thông tin chi tiết.</p>
+
   {% if medical_centers %}
   <div class="row">
     {% for medical_center in medical_centers %}
-    <div class="col-md-4 mb-3">
-      <div class="card">
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm border-0">
         {% if medical_center.cover_img %}
-        <img src="{{ medical_center.cover_img }}" class="card-img-top" alt="{{ medical_center.name }}" style="max-height: 200px; object-fit: cover;" onerror="this.src='/static/images/default_hospital.jpg'">
+        <img src="{{ medical_center.cover_img }}" class="card-img-top" alt="{{ medical_center.name }}" style="height: 200px; object-fit: cover;">
         {% else %}
-        <img src="/static/images/default_hospital.jpg" class="card-img-top" alt="Default Hospital" style="max-height: 200px; object-fit: cover;">
+        <img src="/static/images/default_hospital.jpg" class="card-img-top" alt="Default Hospital" style="height: 200px; object-fit: cover;">
         {% endif %}
         <div class="card-body">
-          <h5 class="card-title">{{ medical_center.name }}</h5>
-          <p class="card-text">{{ medical_center.description|truncate(50) }}</p>
-          <a href="{{ url_for('medical_center_details', medical_center_id=medical_center.id) }}" class="btn btn-primary">Xem Chi Tiết</a>
+          <h5 class="card-title"><i class="fas fa-hospital-alt mr-2 text-primary"></i>{{ medical_center.name }}</h5>
+          <p class="card-text text-muted">{{ medical_center.description|truncate(100) }}</p>
+          <a href="{{ url_for('medical_center_details', medical_center_id=medical_center.id) }}" class="btn btn-primary mt-2">Xem Chi Tiết</a>
         </div>
       </div>
     </div>
     {% endfor %}
   </div>
   {% else %}
-  <div class="alert alert-warning">
-    Không tìm thấy bệnh viện nào.
+  <div class="alert alert-warning text-center" role="alert">
+    Hiện tại không tìm thấy trung tâm y tế nào.
   </div>
   {% endif %}
+  <div class="text-center mt-4">
+    <a href="{{ url_for('home') }}" class="btn btn-info">Quay Lại Trang Chủ</a>
+  </div>
 </div>
 {% endblock %}
