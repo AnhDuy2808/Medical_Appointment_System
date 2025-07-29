@@ -1,17 +1,20 @@
 from sqlalchemy import Column, Integer, String, DateTime, Date, Time, ForeignKey
-from sqlalchemy.orm import relationship
-from datetime import datetime
+from sqlalchemy.orm import relationship, backref
+from datetime import datetime, time, timedelta, date
 from enum import Enum as UserEnum
 from DatLichKhamOnline import app, db
+
 
 class BaseModel(db.Model):
     __abstract__ = True
     id = Column(Integer, primary_key=True, autoincrement=True)
 
+
 class UserRole(UserEnum):
     ADMIN = "admin"
     USER = "user"
     DOCTOR = "doctor"
+
 
 class User(BaseModel):
     __tablename__ = 'users'
@@ -28,11 +31,16 @@ class User(BaseModel):
     # Relationships
     doctor_departments = relationship("DoctorDepartment", back_populates="user")
     doctor_medical_centers = relationship("DoctorMedicalCenter", back_populates="user")
-    ships = relationship("Ship", back_populates="doctor")
+    shifts = relationship("Shift", back_populates="doctor")  # Corrected from 'shift' to 'shifts'
     tickets_as_client = relationship("Ticket", back_populates="client", foreign_keys="Ticket.client_id")
+
+    # Thêm relationships để dễ dàng truy cập chuyên khoa và nơi công tác
+    specialties = relationship("Department", secondary="doctor_department", viewonly=True)
+    work_places = relationship("MedicalCenter", secondary="doctor_medical_center", viewonly=True)
 
     def __str__(self):
         return f"{self.first_name or ''} {self.last_name or ''}".strip()
+
 
 class Department(BaseModel):
     __tablename__ = 'departments'
@@ -47,6 +55,7 @@ class Department(BaseModel):
 
     def __str__(self):
         return self.name
+
 
 class MedicalCenter(BaseModel):
     __tablename__ = 'medical_centers'
@@ -63,6 +72,7 @@ class MedicalCenter(BaseModel):
     def __str__(self):
         return self.name
 
+
 class DoctorDepartment(BaseModel):
     __tablename__ = 'doctor_department'
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
@@ -71,6 +81,7 @@ class DoctorDepartment(BaseModel):
     # Relationships
     user = relationship("User", back_populates="doctor_departments")
     department = relationship("Department", back_populates="doctor_departments")
+
 
 class MedicalCenterDepartment(BaseModel):
     __tablename__ = 'medical_center_department'
@@ -81,8 +92,9 @@ class MedicalCenterDepartment(BaseModel):
     medical_center = relationship("MedicalCenter", back_populates="medical_center_departments")
     department = relationship("Department", back_populates="medical_center_departments")
 
-class Ship(BaseModel):
-    __tablename__ = 'ships'
+
+class Shift(BaseModel):
+    __tablename__ = 'shifts'
     doctor_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
@@ -90,11 +102,12 @@ class Ship(BaseModel):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    doctor = relationship("User", back_populates="ships")
-    tickets = relationship("Ticket", back_populates="ship")
+    doctor = relationship("User", back_populates="shifts")  # Corrected: 'shifts'
+    tickets = relationship("Ticket", back_populates="shift")
 
     def __str__(self):
-        return f"Ship for {self.doctor_id} on {self.work_date}"
+        return f"Shift for {self.doctor_id} on {self.work_date}"
+
 
 class DoctorMedicalCenter(BaseModel):
     __tablename__ = 'doctor_medical_center'
@@ -105,10 +118,11 @@ class DoctorMedicalCenter(BaseModel):
     user = relationship("User", back_populates="doctor_medical_centers")
     medical_center = relationship("MedicalCenter", back_populates="doctor_medical_centers")
 
+
 class Ticket(BaseModel):
     __tablename__ = 'tickets'
     uuid = Column(String(255), nullable=False, unique=True)
-    ship_id = Column(Integer, ForeignKey('ships.id'), nullable=False)
+    shifts_id = Column(Integer, ForeignKey('shifts.id'), nullable=False)
     client_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     status = Column(String(50), nullable=False)
     first_name = Column(String(255), nullable=False)
@@ -120,87 +134,121 @@ class Ticket(BaseModel):
     updated_on = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    ship = relationship("Ship", back_populates="tickets")
+    shift = relationship("Shift", back_populates="tickets")
     client = relationship("User", back_populates="tickets_as_client", foreign_keys=[client_id])
+
 
 if __name__ == '__main__':
     with app.app_context():
-        db.drop_all()  # Clear existing data to avoid duplicates
+        # Xóa tất cả các bảng hiện có và tạo lại
+        print("Đang xóa và tạo lại các bảng...")
+        db.drop_all()
         db.create_all()
+        print("Hoàn tất!")
 
-        # Check if users already exist to avoid duplicates
-        if not User.query.filter_by(username="admin1").first():
-            users = [
-                User(username="admin1", password="admin123", role=UserRole.ADMIN.value, first_name="Admin", last_name="User"),
-                User(username="client1", password="client123", role=UserRole.USER.value, first_name="John", last_name="Doe"),
-                User(username="doctor1", password="doc123", role=UserRole.DOCTOR.value, first_name="Nguyen", last_name="Van A", avatar='https://res.cloudinary.com/du6rdcpyi/image/upload/v1753201720/ke3ntry60qmna9ijxsje.jpg'),
-                User(username="doctor2", password="doc456", role=UserRole.DOCTOR.value, first_name="Tran", last_name="Thi B", avatar='https://res.cloudinary.com/du6rdcpyi/image/upload/v1753201802/dcqs2vrao4xukk70cjl8.jpg')
-            ]
-            db.session.bulk_save_objects(users)
-            db.session.commit()
+        print("\n--- Đang tạo dữ liệu mẫu ---")
 
-        # Check if departments already exist
-        if not Department.query.filter_by(slug="tim-mach").first():
-            departments = [
-                Department(name="Tim mạch", slug="tim-mach", symbol_img="tim_mach.png"),
-                Department(name="Nội khoa", slug="noi-khoa", symbol_img="noi_khoa.png")
-            ]
-            db.session.bulk_save_objects(departments)
-            db.session.commit()
+        # 1. Tạo người dùng mẫu: 1 admin, 4 bác sĩ, 1 người dùng
+        admin_user = User(username='admin', password='123', role=UserRole.ADMIN.value, first_name='Admin',
+                          last_name='System')
+        doctor1 = User(username='doc1', password='123', role=UserRole.DOCTOR.value, first_name='Lâm Việt',
+                       last_name='Trung')
+        doctor2 = User(username='doc2', password='123', role=UserRole.DOCTOR.value, first_name='Phạm Thị',
+                       last_name='Mai')
+        doctor3 = User(username='doc3', password='123', role=UserRole.DOCTOR.value, first_name='Lê Văn',
+                       last_name='Dũng')
+        doctor4 = User(username='doc4', password='123', role=UserRole.DOCTOR.value, first_name='Trần Thị',
+                       last_name='Hương')
+        client1 = User(username='client1', password='123', role=UserRole.USER.value, first_name='Khách',
+                       last_name='Hàng A')
 
-        # Check if medical centers already exist
-        if not MedicalCenter.query.filter_by(name="Bệnh Viện Chợ Rẫy").first():
-            medical_centers = [
-                MedicalCenter(name="Bệnh Viện Chợ Rẫy", description="Bệnh viện lớn tại TP.HCM", cover_img="https://res.cloudinary.com/du6rdcpyi/image/upload/v1753201863/ck97elfnedtfpacuzcds.png"),
-                MedicalCenter(name="Bệnh Viện Bạch Mai", description="Bệnh viện lớn tại Hà Nội", cover_img="https://res.cloudinary.com/du6rdcpyi/image/upload/v1753201879/s2oajgfxqgmgfudool9m.jpg")
-            ]
-            db.session.bulk_save_objects(medical_centers)
-            db.session.commit()
+        db.session.add_all([admin_user, doctor1, doctor2, doctor3, doctor4, client1])
+        db.session.commit()
+        print("Đã tạo người dùng mẫu.")
 
-        # Check if doctor-department relationships exist
-        if not DoctorDepartment.query.filter_by(user_id=3, department_id=1).first():
-            doctor_departments = [
-                DoctorDepartment(user_id=3, department_id=1),  # Doctor1 in Tim mạch
-                DoctorDepartment(user_id=4, department_id=2)   # Doctor2 in Nội khoa
-            ]
-            db.session.bulk_save_objects(doctor_departments)
-            db.session.commit()
+        # 2. Tạo khoa mẫu
+        cardiology_dept = Department(name='Tim mạch', slug='tim-mach')
+        pediatrics_dept = Department(name='Nhi khoa', slug='nhi-khoa')
+        general_med_dept = Department(name='Nội tổng quát', slug='noi-tong-quat')
+        dermatology_dept = Department(name='Da liễu', slug='da-lieu')
 
-        # Check if medical center-department relationships exist
-        if not MedicalCenterDepartment.query.filter_by(medical_center_id=1, department_id=1).first():
-            medical_center_departments = [
-                MedicalCenterDepartment(medical_center_id=1, department_id=1),  # Chợ Rẫy - Tim mạch
-                MedicalCenterDepartment(medical_center_id=2, department_id=2)   # Bạch Mai - Nội khoa
-            ]
-            db.session.bulk_save_objects(medical_center_departments)
-            db.session.commit()
+        db.session.add_all([cardiology_dept, pediatrics_dept, general_med_dept, dermatology_dept])
+        db.session.commit()
+        print("Đã tạo khoa mẫu.")
 
-        # Check if doctor-medical center relationships exist
-        if not DoctorMedicalCenter.query.filter_by(user_id=3, medical_center_id=1).first():
-            doctor_medical_centers = [
-                DoctorMedicalCenter(user_id=3, medical_center_id=1),  # Doctor1 at Chợ Rẫy
-                DoctorMedicalCenter(user_id=4, medical_center_id=2)   # Doctor2 at Bạch Mai
-            ]
-            db.session.bulk_save_objects(doctor_medical_centers)
-            db.session.commit()
+        # 3. Tạo trung tâm y tế mẫu
+        medical_center_a = MedicalCenter(name='Bệnh viện Chợ Rẫy', description='Bệnh viện đa khoa tuyến cuối')
+        medical_center_b = MedicalCenter(name='Bệnh viện Nhi Đồng 1', description='Bệnh viện chuyên khoa nhi')
+        medical_center_c = MedicalCenter(name='Phòng khám Đa khoa Quốc tế',
+                                         description='Phòng khám cung cấp dịch vụ tổng quát')
+        medical_center_d = MedicalCenter(name='Bệnh viện Da Liễu TP.HCM', description='Bệnh viện chuyên khoa da liễu')
 
-        # Check if ships exist
-        if not Ship.query.filter_by(doctor_id=3).first():
-            ships = [
-                Ship(doctor_id=3, start_time="09:00", end_time="12:00", work_date="2025-07-23"),
-                Ship(doctor_id=3, start_time="14:00", end_time="17:00", work_date="2025-07-23"),
-                Ship(doctor_id=4, start_time="10:00", end_time="13:00", work_date="2025-07-23")
-            ]
-            db.session.bulk_save_objects(ships)
-            db.session.commit()
+        db.session.add_all([medical_center_a, medical_center_b, medical_center_c, medical_center_d])
+        db.session.commit()
+        print("Đã tạo trung tâm y tế mẫu.")
 
-        # Check if tickets exist
-        if not Ticket.query.filter_by(uuid="ticket-001").first():
-            tickets = [
-                Ticket(uuid="ticket-001", ship_id=1, client_id=2, status="pending", first_name="John", last_name="Doe",
-                       birth_of_day="1990-01-01", gender="Male", appointment_time="09:30")
-            ]
-            db.session.bulk_save_objects(tickets)
-            db.session.commit()
+        # 4. Liên kết bác sĩ với khoa và trung tâm y tế
+        doc_dept1 = DoctorDepartment(user_id=doctor1.id, department_id=cardiology_dept.id)
+        doc_mc1 = DoctorMedicalCenter(user_id=doctor1.id, medical_center_id=medical_center_a.id)
+        doc_dept2 = DoctorDepartment(user_id=doctor2.id, department_id=pediatrics_dept.id)
+        doc_mc2 = DoctorMedicalCenter(user_id=doctor2.id, medical_center_id=medical_center_b.id)
+        doc_dept3 = DoctorDepartment(user_id=doctor3.id, department_id=general_med_dept.id)
+        doc_mc3 = DoctorMedicalCenter(user_id=doctor3.id, medical_center_id=medical_center_c.id)
+        doc_dept4 = DoctorDepartment(user_id=doctor4.id, department_id=dermatology_dept.id)
+        doc_mc4 = DoctorMedicalCenter(user_id=doctor4.id, medical_center_id=medical_center_d.id)
 
-        print("Sample data inserted successfully!")
+        mc_dept1 = MedicalCenterDepartment(medical_center_id=medical_center_a.id, department_id=cardiology_dept.id)
+        mc_dept2 = MedicalCenterDepartment(medical_center_id=medical_center_b.id, department_id=pediatrics_dept.id)
+        mc_dept3 = MedicalCenterDepartment(medical_center_id=medical_center_c.id, department_id=general_med_dept.id)
+        mc_dept4 = MedicalCenterDepartment(medical_center_id=medical_center_d.id, department_id=dermatology_dept.id)
+
+        db.session.add_all([doc_dept1, doc_mc1, doc_dept2, doc_mc2, doc_dept3, doc_mc3, doc_dept4, doc_mc4,
+                            mc_dept1, mc_dept2, mc_dept3, mc_dept4])
+        db.session.commit()
+        print("Đã thiết lập các mối quan hệ.")
+
+        print("\n--- Đang tạo lịch làm việc cho các bác sĩ để phủ 24h đến 15/08/2025 ---")
+
+        start_date = date.today()
+        end_date = date(2025, 8, 15)
+        delta = timedelta(days=1)
+        current_date = start_date
+
+        while current_date <= end_date:
+            # Ca 1: 00:00 - 06:00 (Bác sĩ 1)
+            shift1 = Shift(
+                doctor_id=doctor1.id,
+                start_time=time(0, 0),  # 00:00 AM
+                end_time=time(6, 0),  # 06:00 AM
+                work_date=current_date
+            )
+
+            # Ca 2: 06:00 - 12:00 (Bác sĩ 2)
+            shift2 = Shift(
+                doctor_id=doctor2.id,
+                start_time=time(6, 0),  # 06:00 AM
+                end_time=time(12, 0),  # 12:00 PM
+                work_date=current_date
+            )
+
+            # Ca 3: 12:00 - 18:00 (Bác sĩ 3)
+            shift3 = Shift(
+                doctor_id=doctor3.id,
+                start_time=time(12, 0),  # 12:00 PM
+                end_time=time(18, 0),  # 06:00 PM
+                work_date=current_date
+            )
+
+            # Ca 4: 18:00 - 00:00 (Bác sĩ 4) - kết thúc vào nửa đêm của ngày hiện tại
+            shift4 = Shift(
+                doctor_id=doctor4.id,
+                start_time=time(18, 0),  # 06:00 PM
+                end_time=time(0, 0),  # 00:00 AM của ngày tiếp theo (thực ra là 23:59:59 của ngày hiện tại)
+                work_date=current_date
+            )
+
+            db.session.add_all([shift1, shift2, shift3, shift4])
+            current_date += delta
+
+        db.session.commit()
+        print("--- Đã tạo thành công dữ liệu mẫu và lịch làm việc phủ 24h! ---")
