@@ -1,32 +1,44 @@
 {% extends 'layout/base.html' %}
 
-{% block title %}Home{% endblock %}
+{% block title %}Trang Chủ - Tìm Kiếm Bác Sĩ & Bệnh Viện{% endblock %}
 
 {% block content %}
 <div class="container my-5">
-  <h2>Bác Sĩ</h2>
+  <div class="text-center mb-5">
+    <h1 class="display-4">Chào mừng đến với Hệ thống Đặt Lịch Khám Online</h1>
+    <p class="lead">Tìm kiếm và đặt lịch với những bác sĩ và trung tâm y tế uy tín hàng đầu.</p>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Bác Sĩ Nổi Bật</h2>
+    <a href="{{ url_for('search_doctor') }}" class="btn btn-outline-primary">Xem tất cả</a>
+  </div>
   {% if doctors %}
   <div class="row">
     {% for doctor in doctors %}
-    <div class="col-md-4 mb-3">
-      <div class="card">
-        {% if doctor.avatar %}
-        <img src="{{ doctor.avatar }}" class="card-img-top" alt="{{ doctor.first_name }} {{ doctor.last_name }}" style="max-height: 200px; object-fit: cover;" onerror="this.src='/static/images/default_avatar.jpg'">
-        {% else %}
-        <img src="/static/images/default_avatar.jpg" class="card-img-top" alt="Default Avatar" style="max-height: 200px; object-fit: cover;">
-        {% endif %}
-        <div class="card-body">
-          <h5 class="card-title">{{ doctor.first_name }} {{ doctor.last_name }}</h5>
-          <p class="card-text">
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm border-0">
+        <div class="text-center pt-3">
+          {% if doctor.avatar %}
+          <img src="{{ doctor.avatar }}" class="rounded-circle" alt="{{ doctor.first_name }} {{ doctor.last_name }}" style="width: 150px; height: 150px; object-fit: cover;">
+          {% else %}
+          <img src="/static/images/default_avatar.jpg" class="rounded-circle" alt="Default Avatar" style="width: 150px; height: 150px; object-fit: cover;">
+          {% endif %}
+        </div>
+        <div class="card-body text-center">
+          <h5 class="card-title mt-2">{{ doctor.first_name }} {{ doctor.last_name }}</h5>
+          <p class="card-text text-muted small">
             {% if doctor.doctor_departments %}
+              <i class="fas fa-stethoscope mr-1"></i> Khoa:
               {% for dd in doctor.doctor_departments %}
-                Khoa: {{ dd.department.name }}<br>
+                {{ dd.department.name }}{% if not loop.last %}, {% endif %}
               {% endfor %}
             {% else %}
-              Chưa có khoa được gán
+              <i class="fas fa-stethoscope mr-1"></i> Chưa có khoa được gán
             {% endif %}
           </p>
-          <a href="{{ url_for('book_appointment', doctor_id=doctor.id) }}" class="btn btn-primary">Đặt Lịch</a>
+          <a href="{{ url_for('book_appointment', doctor_id=doctor.id) }}" class="btn btn-primary btn-sm mt-2">Đặt Lịch</a>
+          <a href="{{ url_for('doctor_details', doctor_id=doctor.id) }}" class="btn btn-outline-secondary btn-sm mt-2">Xem Hồ Sơ</a>
         </div>
       </div>
     </div>
@@ -38,20 +50,23 @@
   </div>
   {% endif %}
 
-  <h2 class="my-3">Bệnh viện</h2>
+  <div class="d-flex justify-content-between align-items-center mb-3 mt-5">
+    <h2>Trung Tâm Y Tế</h2>
+    <a href="{{ url_for('search_medical_center') }}" class="btn btn-outline-primary">Xem tất cả</a>
+  </div>
   {% if medical_centers %}
   <div class="row">
     {% for medical_center in medical_centers %}
-    <div class="col-md-4 mb-3">
-      <div class="card">
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm border-0">
         {% if medical_center.cover_img %}
-        <img src="{{ medical_center.cover_img }}" class="card-img-top" alt="{{ medical_center.name }}" style="max-height: 200px; object-fit: cover;" onerror="this.src='/static/images/default_hospital.jpg'">
+        <img src="{{ medical_center.cover_img }}" class="card-img-top" alt="{{ medical_center.name }}" style="height: 200px; object-fit: cover;">
         {% else %}
-        <img src="/static/images/default_hospital.jpg" class="card-img-top" alt="Default Hospital" style="max-height: 200px; object-fit: cover;">
+        <img src="/static/images/default_hospital.jpg" class="card-img-top" alt="Default Hospital" style="height: 200px; object-fit: cover;">
         {% endif %}
         <div class="card-body">
-          <h5 class="card-title">{{ medical_center.name }}</h5>
-          <p class="card-text">{{ medical_center.description|truncate(50) }}</p>
+          <h5 class="card-title"><i class="fas fa-hospital-alt mr-2"></i>{{ medical_center.name }}</h5>
+          <p class="card-text text-muted">{{ medical_center.description|truncate(80) }}</p>
           <a href="{{ url_for('medical_center_details', medical_center_id=medical_center.id) }}" class="btn btn-primary">Xem Chi Tiết</a>
         </div>
       </div>
