@@ -4,29 +4,136 @@
 
 {% block content %}
 <div class="container my-5">
-  <h2>Đặt Lịch Khám Với Bác Sĩ {{ doctor.first_name }} {{ doctor.last_name }}</h2>
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-  {% if ships %}
-  <form method="POST" action="{{ url_for('book_appointment', doctor_id=doctor.id) }}">
-    <div class="form-group">
-      <label for="ship_id">Chọn khung giờ</label>
-      <select class="form-control" id="ship_id" name="ship_id" required>
-        {% for ship in ships %}
-        <option value="{{ ship.id }}">{{ ship.start_time }} - {{ ship.end_time }} ({{ ship.work_date }})</option>
-        {% endfor %}
-      </select>
+  <div class="row">
+    <div class="col-md-4">
+      <div class="card p-3 mb-3">
+        <div class="d-flex align-items-center flex-column text-center">
+          <img src="{% if doctor.avatar %}{{ doctor.avatar }}{% else %}/static/images/default_avatar.jpg{% endif %}"
+               alt="Doctor Avatar" class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+
+          <h5>Phó giáo sư, Tiến sĩ, Bác sĩ {{ doctor.last_name }} {{ doctor.first_name }}</h5>
+          {# Bỏ phần chức vụ và kinh nghiệm #}
+
+          <p class="mb-1 text-muted">
+            <i class="fas fa-stethoscope"></i> Chuyên khoa:
+            {% if doctor.specialties %}
+              {{ doctor.specialties | map(attribute='name') | join(', ') }}
+            {% else %}
+              Đang cập nhật
+            {% endif %}
+          </p>
+          <p class="mb-0 text-muted">
+            <i class="fas fa-hospital"></i> Nơi công tác:
+            {% if doctor.work_places %}
+              {{ doctor.work_places | map(attribute='name') | join(', ') }}
+            {% else %}
+              Đang cập nhật
+            {% endif %}
+          </p>
+          <button class="btn btn-sm btn-outline-primary mt-2"><i class="far fa-heart"></i> Yêu thích</button>
+        </div>
+      </div>
     </div>
-    <button type="submit" class="btn btn-primary">Đặt Lịch</button>
-  </form>
-  {% else %}
-  <p class="text-danger">Không có lịch làm việc nào hôm nay.</p>
-  {% endif %}
+
+    <div class="col-md-8">
+      <h2 class="mb-4">Đặt Lịch Khám Với Bác Sĩ {{ doctor.first_name }} {{ doctor.last_name }}</h2>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <div class="alert alert-warning my-3" role="alert">
+        <strong><i class="fas fa-exclamation-triangle"></i> Lưu ý:</strong>
+        Nếu bệnh nhân bận việc không đến khám được vui lòng hủy lịch khám đã đặt và đặt lại ngày khác. Xin cảm ơn!
+      </div>
+
+      <div class="quick-book-section card p-4">
+        <h4>Đặt khám nhanh</h4>
+
+        <div class="form-group mb-3">
+          <label for="appointment_date">Chọn ngày cụ thể:</label>
+          <input type="date" class="form-control" id="appointment_date" name="appointment_date"
+                 value="{{ selected_date if selected_date else '' }}"
+                 onchange="window.location.href = '{{ url_for('book_appointment', doctor_id=doctor.id) }}?appointment_date=' + this.value" required>
+        </div>
+
+        <div class="date-navigator d-flex align-items-center mb-4">
+          <button class="btn btn-light arrow-left mr-2" disabled><i class="fas fa-chevron-left"></i></button>
+          <div class="d-flex flex-nowrap overflow-auto flex-grow-1 date-list-container">
+            {% if available_dates %}
+              {% for day_info in available_dates %}
+                <div class="date-item text-center p-2 border rounded mx-1
+                     {% if day_info.is_selected %}bg-primary text-white{% else %}bg-light text-dark{% endif %}"
+                     style="min-width: 120px; cursor: pointer; flex-shrink: 0;"
+                     onclick="window.location.href = '{{ url_for('book_appointment', doctor_id=doctor.id) }}?appointment_date={{ day_info.date.strftime('%Y-%m-%d') }}'">
+                  <div class="day-of-week font-weight-bold">T{{ day_info.date.strftime('%w') }}</div> {# Ví dụ: T4 (thứ 4) #}
+                  <div class="date-month">{{ day_info.date.strftime('%d-%m') }}</div> {# Ví dụ: 30-07 #}
+                  <div class="shift-count">{{ day_info.shift_count }} khung giờ</div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p class="text-muted">Không có ngày làm việc nào.</p>
+            {% endif %}
+          </div>
+          <button class="btn btn-light arrow-right ml-2" disabled><i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <div class="time-slots">
+          {% if current_date_shifts %}
+            {% for session_name, session_ships in current_date_shifts.items() %}
+            <div class="session-group mb-3">
+              <h5 class="session-title text-primary">{{ session_name }}</h5>
+              <div class="slot-buttons d-flex flex-wrap">
+                {% for ship in session_ships %}
+                <form method="POST" action="{{ url_for('book_appointment', doctor_id=doctor.id) }}" class="mr-2 mb-2">
+                    <input type="hidden" name="ship_id" value="{{ ship.id }}">
+                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                        {{ ship.start_time.strftime('%H:%M') }} - {{ ship.end_time.strftime('%H:%M') }}
+                    </button>
+                </form>
+                {% endfor %}
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <p class="text-danger">Không có lịch làm việc nào cho ngày đã chọn.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="contact-info text-muted mt-3">
+        Hỗ trợ đặt khám: 1900-2805
+      </div>
+      <button type="button" class="btn btn-primary btn-lg mt-3 w-100">ĐẶT KHÁM NGAY</button>
+    </div>
+  </div>
   <a href="{{ url_for('search_doctor') }}" class="btn btn-secondary mt-3">Quay Lại</a>
 </div>
+
+{# Đảm bảo bạn đã include Font Awesome CSS trong layout/base.html của mình, hoặc thêm dòng này nếu chưa có #}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<style>
+  /* Tùy chỉnh CSS để các thẻ ngày trông giống tab hơn */
+  .date-list-container {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  .date-list-container::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  .date-item {
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  .date-item.bg-primary {
+    border-color: var(--primary) !important;
+  }
+</style>
 {% endblock %}
