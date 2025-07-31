@@ -41,17 +41,19 @@ class Ticket(BaseModel):
 
 class User(BaseModel):
     __tablename__ = 'users'
-    username = Column(String(255), nullable=False, unique=True)
-    password = Column(String(255), nullable=False)
-    email = Column(String(255), nullable=True, unique=True)
-    role = Column(String(50), nullable=False)
-    first_name = Column(String(255))
-    last_name = Column(String(255))
-    middle_name = Column(String(255))
-    avatar = Column(String(255))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(128))
+    role = db.Column(db.Enum(UserRole), default=UserRole.USER)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    # Thêm các trường này
+    first_name = db.Column(db.String(50))
+    last_name = db.Column(db.String(50))
+    birth_of_day = db.Column(db.Date)
+    gender = db.Column(db.String(10))  # Male, Female, Other
+    phone = db.Column(db.String(20))
+    address = db.Column(db.String(200))
+    avatar = db.Column(db.String(255))
     doctor_departments = relationship("DoctorDepartment", back_populates="user")
     doctor_medical_centers = relationship("DoctorMedicalCenter", back_populates="user")
     shifts = relationship("Shift", back_populates="doctor")
