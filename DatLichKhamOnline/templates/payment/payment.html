@@ -1,23 +1,90 @@
 {% extends 'layout/base.html' %}
 
-{% block title %}Thanh Toán{% endblock %}
+{% block title %}Thanh Toán Đặt Lịch{% endblock %}
+
+{# Ẩn thanh tìm kiếm trên trang thanh toán #}
+{% block search_bar %}{% endblock %}
 
 {% block content %}
 <div class="container my-5">
-  <h2 class="my-4">Thanh Toán Lịch Hẹn</h2>
   <div class="row justify-content-center">
-    <div class="col-md-6">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title">Thông Tin Lịch Hẹn</h5>
-          <p class="card-text"><strong>Mã vé:</strong> {{ ticket.uuid }}</p>
-          <p class="card-text"><strong>Bác sĩ:</strong> {{ ticket.ship.doctor.first_name }} {{ ticket.ship.doctor.last_name }}</p>
-          <p class="card-text"><strong>Thời gian:</strong> {{ ticket.ship.work_date }} {{ ticket.appointment_time }}</p>
-          <p class="card-text"><strong>Trạng thái:</strong> {{ ticket.status }}</p>
-          <form method="POST" action="{{ url_for('payment', ticket_id=ticket.id) }}">
-            <button type="submit" class="btn btn-primary w-100 mt-3">Thanh Toán</button>
-          </form>
-          <a href="{{ url_for('home') }}" class="btn btn-secondary mt-2">Hủy</a>
+    <div class="col-md-8">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white text-center py-3">
+          <h2 class="mb-0">Xác Nhận Thanh Toán</h2>
+          <p class="mb-0">Vui lòng kiểm tra thông tin chi tiết và tiến hành thanh toán.</p>
+        </div>
+        <div class="card-body p-4">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+
+          {% if ticket %}
+          <h4 class="mb-3 text-center">Thông Tin Lịch Hẹn</h4>
+          <ul class="list-group mb-4">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <strong>Mã Vé:</strong>
+              <span>{{ ticket.uuid }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <strong>Bác Sĩ:</strong>
+              <span>{{ ticket.shifts.doctor.first_name }} {{ ticket.shifts.doctor.last_name }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <strong>Chuyên Khoa:</strong>
+              <span>
+                {% if ticket.shifts.doctor.specialties %}
+                  {{ ticket.shifts.doctor.specialties | map(attribute='name') | join(', ') }}
+                {% else %}
+                  Đang cập nhật
+                {% endif %}
+              </span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <strong>Ngày Khám:</strong>
+              <span>{{ ticket.shifts.work_date.strftime('%d/%m/%Y') }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <strong>Giờ Khám:</strong>
+              <span>{{ ticket.shifts.start_time.strftime('%H:%M') }} - {{ ticket.shifts.end_time.strftime('%H:%M') }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <strong>Trung Tâm Y Tế:</strong>
+              <span>{{ ticket.shifts.medical_center.name }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <strong>Địa chỉ:</strong>
+              <span>{{ ticket.shifts.medical_center.address }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <strong>Tên Bệnh Nhân:</strong>
+              <span>{{ ticket.first_name }} {{ ticket.last_name }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <strong>Trạng Thái:</strong>
+              <span class="badge {% if ticket.status == 'pending' %}bg-warning{% elif ticket.status == 'confirmed' %}bg-success{% else %}bg-secondary{% endif %}">{{ ticket.status.capitalize() }}</span>
+            </li>
+          </ul>
+
+          <div class="text-center mt-4">
+            {# Đây là nơi bạn sẽ thêm logic thanh toán thực tế #}
+            <p class="lead">Tổng tiền cần thanh toán: <strong class="text-danger">500.000 VNĐ</strong> (Ví dụ)</p>
+            <button class="btn btn-success btn-lg mx-2"><i class="fas fa-money-bill-wave mr-2"></i> Thanh Toán Ngay</button>
+            <a href="{{ url_for('home') }}" class="btn btn-outline-secondary btn-lg mx-2"><i class="fas fa-times-circle mr-2"></i> Hủy Bỏ</a>
+          </div>
+
+          {% else %}
+          <div class="alert alert-danger text-center" role="alert">
+            Không tìm thấy thông tin vé đặt lịch. Vui lòng thử lại.
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-footer text-muted text-center py-3">
+          Cảm ơn bạn đã tin tưởng dịch vụ của chúng tôi!
         </div>
       </div>
     </div>
