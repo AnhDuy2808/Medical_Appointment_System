@@ -327,6 +327,51 @@ def doctor_details(doctor_id):
 
     return render_template('doctor/doctor_details.html', doctor=doctor, shifts_by_date=shifts_by_date)
 
+
+@app.route('/profile', methods=['GET', 'POST'])
+def profile():
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('Vui lòng đăng nhập để xem thông tin cá nhân.', 'warning')
+        return redirect(url_for('user_login'))
+
+    user = User.query.get(user_id)
+    if not user:
+        flash('Không tìm thấy thông tin người dùng.', 'danger')
+        # Xóa session nếu user không tồn tại trong DB
+        session.pop('user_id', None)
+        return redirect(url_for('user_login'))
+
+    if request.method == 'POST':
+        user.first_name = request.form.get('first_name')
+        user.last_name = request.form.get('last_name')
+
+        birth_of_day_str = request.form.get('birth_of_day')
+        if birth_of_day_str:
+            try:
+                user.birth_of_day = datetime.strptime(birth_of_day_str, '%Y-%m-%d').date()
+            except ValueError:
+                flash('Ngày sinh không hợp lệ.', 'danger')
+                return redirect(url_for('profile'))
+        else:
+            user.birth_of_day = None  # Cho phép xóa ngày sinh nếu trường trống
+
+        user.gender = request.form.get('gender')
+        user.phone = request.form.get('phone')
+        user.address = request.form.get('address')
+        user.avatar = request.form.get('avatar')
+
+        try:
+            db.session.commit()
+            flash('Cập nhật thông tin cá nhân thành công!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Lỗi khi cập nhật thông tin: {e}', 'danger')
+
+        return redirect(url_for('profile'))
+
+    return render_template('user/profile.html', user=user)
+
 if __name__ == '__main__':
     app.secret_key = 'your_secret_key' # Rất quan trọng cho session
     app.run(debug=True)

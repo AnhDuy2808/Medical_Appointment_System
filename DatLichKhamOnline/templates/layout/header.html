@@ -17,7 +17,7 @@
             Chào, {{ g.user.first_name }} {{ g.user.last_name }}!
           </a>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-            <li><a class="dropdown-item" href="#">Thông tin cá nhân</a></li> {# Thay thế bằng route thông tin người dùng nếu có #}
+            <li><a class="dropdown-item" href="{{ url_for('profile') }}">Thông tin cá nhân</a></li> {# Thay thế bằng route thông tin người dùng nếu có #}
             <li><a class="dropdown-item" href="#">Lịch sử đặt khám</a></li> {# Thay thế bằng route lịch sử đặt khám nếu có #}
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="{{ url_for('logout') }}">Đăng Xuất</a></li>
