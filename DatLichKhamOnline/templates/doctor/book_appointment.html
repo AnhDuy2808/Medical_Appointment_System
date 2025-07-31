@@ -16,18 +16,34 @@
 
           <p class="mb-1 text-muted">
             <i class="fas fa-stethoscope"></i> Chuyên khoa:
-            {% if doctor.specialties %}
-              {{ doctor.specialties | map(attribute='name') | join(', ') }}
+            {% if doctor.doctor_departments %}
+              {% set specialty_names = [] %}
+              {% for dd in doctor.doctor_departments %}
+                {% if dd.department %}{% set _ = specialty_names.append(dd.department.name) %}{% endif %}
+              {% endfor %}
+              {% if specialty_names %}
+                {{ specialty_names | join(', ') }}
+              {% else %}
+                Đang cập nhật
+              {% endif %}
             {% else %}
               Đang cập nhật
             {% endif %}
           </p>
           <p class="mb-0 text-muted">
             <i class="fas fa-hospital"></i> Nơi công tác:
-            {% if doctor.work_places %}
-              {{ doctor.work_places | map(attribute='name') | join(', ') }}
+            {% if doctor.doctor_medical_centers %}
+              {% set mc_names = [] %}
+              {% for dmc in doctor.doctor_medical_centers %}
+                {% if dmc.medical_center %}{% set _ = mc_names.append(dmc.medical_center.name) %}{% endif %}
+              {% endfor %}
+              {% if mc_names %}
+                {{ mc_names | join(', ') }}
+              {% else %}
+                Đang cập nhật (Chưa có trung tâm y tế được gán)
+              {% endif %}
             {% else %}
-              Đang cập nhật
+              Đang cập nhật (Chưa có trung tâm y tế được gán)
             {% endif %}
           </p>
           <button class="btn btn-sm btn-outline-primary mt-2"><i class="far fa-heart"></i> Yêu thích</button>
@@ -52,7 +68,7 @@
       </div>
 
       <div class="quick-book-section card p-4">
-        <h4>Đặt khám nhanh</h4>
+        <h4>Chọn ngày và khung giờ</h4>
 
         <div class="form-group mb-3">
           <label for="appointment_date">Chọn ngày cụ thể:</label>
@@ -70,8 +86,8 @@
                      {% if day_info.is_selected %}bg-primary text-white{% else %}bg-light text-dark{% endif %}"
                      style="min-width: 120px; cursor: pointer; flex-shrink: 0;"
                      onclick="window.location.href = '{{ url_for('book_appointment', doctor_id=doctor.id) }}?appointment_date={{ day_info.date.strftime('%Y-%m-%d') }}'">
-                  <div class="day-of-week font-weight-bold">T{{ day_info.date.strftime('%w') }}</div> {# Ví dụ: T4 (thứ 4) #}
-                  <div class="date-month">{{ day_info.date.strftime('%d-%m') }}</div> {# Ví dụ: 30-07 #}
+                  <div class="day-of-week font-weight-bold">T{{ day_info.date.strftime('%w') }}</div>
+                  <div class="date-month">{{ day_info.date.strftime('%d-%m') }}</div>
                   <div class="shift-count">{{ day_info.shift_count }} khung giờ</div>
                 </div>
               {% endfor %}
@@ -82,58 +98,74 @@
           <button class="btn btn-light arrow-right ml-2" disabled><i class="fas fa-chevron-right"></i></button>
         </div>
 
-        <div class="time-slots">
-          {% if current_date_shifts %}
-            {% for session_name, session_ships in current_date_shifts.items() %}
-            <div class="session-group mb-3">
-              <h5 class="session-title text-primary">{{ session_name }}</h5>
-              <div class="slot-buttons d-flex flex-wrap">
-                {% for ship in session_ships %}
-                <form method="POST" action="{{ url_for('book_appointment', doctor_id=doctor.id) }}" class="mr-2 mb-2">
-                    <input type="hidden" name="ship_id" value="{{ ship.id }}">
-                    <button type="submit" class="btn btn-outline-primary btn-sm">
-                        {{ ship.start_time.strftime('%H:%M') }} - {{ ship.end_time.strftime('%H:%M') }}
-                    </button>
-                </form>
-                {% endfor %}
-              </div>
+        <hr class="my-4">
+        <h4>Thông tin bệnh nhân và chọn khung giờ</h4>
+        <form method="POST" action="{{ url_for('book_appointment', doctor_id=doctor.id) }}" id="mainBookingForm">
+            <input type="hidden" name="appointment_date" value="{{ selected_date if selected_date else '' }}">
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="first_name">Họ đệm:</label>
+                    <input type="text" class="form-control" id="first_name" name="first_name" required
+                           value="{{ current_user_info.first_name if current_user_info else '' }}">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="last_name">Tên:</label>
+                    <input type="text" class="form-control" id="last_name" name="last_name" required
+                           value="{{ current_user_info.last_name if current_user_info else '' }}">
+                </div>
             </div>
-            {% endfor %}
-          {% else %}
-            <p class="text-danger">Không có lịch làm việc nào cho ngày đã chọn.</p>
-          {% endif %}
-        </div>
-      </div>
+            <div class="form-group">
+                <label for="birth_of_day">Ngày sinh:</label>
+                <input type="date" class="form-control" id="birth_of_day" name="birth_of_day" required
+                       value="{{ current_user_info.birth_of_day.strftime('%Y-%m-%d') if current_user_info and current_user_info.birth_of_day else '' }}">
+            </div>
+            <div class="form-group">
+                <label for="gender">Giới tính:</label>
+                <select class="form-control" id="gender" name="gender" required>
+                    <option value="">Chọn giới tính</option>
+                    <option value="Male" {% if current_user_info and current_user_info.gender == 'Male' %}selected{% endif %}>Nam</option>
+                    <option value="Female" {% if current_user_info and current_user_info.gender == 'Female' %}selected{% endif %}>Nữ</option>
+                    <option value="Other" {% if current_user_info and current_user_info.gender == 'Other' %}selected{% endif %}>Khác</option>
+                </select>
+            </div>
 
-      <div class="contact-info text-muted mt-3">
-        Hỗ trợ đặt khám: 1900-2805
+            <div class="time-slots mt-4">
+                {% if current_date_shifts %}
+                    {% for session_name, session_shifts_list in current_date_shifts.items() %}
+                    <div class="session-group mb-3">
+                        <h5 class="session-title text-primary">{{ session_name }}</h5>
+                        <div class="slot-buttons d-flex flex-wrap">
+                            {% for shift in session_shifts_list %}
+                            {# Mỗi nút khung giờ bây giờ là một submit button trong một form riêng #}
+                            <form method="POST" action="{{ url_for('book_appointment', doctor_id=doctor.id) }}" style="display:inline-block;">
+                                <input type="hidden" name="ship_id" value="{{ shift.id }}">
+                                <input type="hidden" name="first_name" value="{{ current_user_info.first_name if current_user_info else '' }}">
+                                <input type="hidden" name="last_name" value="{{ current_user_info.last_name if current_user_info else '' }}">
+                                <input type="hidden" name="birth_of_day" value="{{ current_user_info.birth_of_day.strftime('%Y-%m-%d') if current_user_info and current_user_info.birth_of_day else '' }}">
+                                <input type="hidden" name="gender" value="{{ current_user_info.gender if current_user_info else '' }}">
+                                <input type="hidden" name="appointment_date" value="{{ selected_date if selected_date else '' }}">
+                                <button type="submit" class="btn btn-outline-primary btn-sm time-slot-button mr-2 mb-2">
+                                    {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
+                                </button>
+                            </form>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-danger">Không có lịch làm việc nào cho ngày đã chọn.</p>
+                {% endif %}
+            </div>
+
+            <div class="contact-info text-muted mt-3">
+                Hỗ trợ đặt khám: 1900-2805
+            </div>
+            {# Nút "ĐẶT KHÁM NGAY" sẽ bị loại bỏ hoặc không cần thiết nữa với luồng này #}
+        </form>
       </div>
-      <button type="button" class="btn btn-primary btn-lg mt-3 w-100">ĐẶT KHÁM NGAY</button>
     </div>
   </div>
   <a href="{{ url_for('search_doctor') }}" class="btn btn-secondary mt-3">Quay Lại</a>
 </div>
-
-{# Đảm bảo bạn đã include Font Awesome CSS trong layout/base.html của mình, hoặc thêm dòng này nếu chưa có #}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
-<style>
-  /* Tùy chỉnh CSS để các thẻ ngày trông giống tab hơn */
-  .date-list-container {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-  }
-
-  .date-list-container::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
-  }
-
-  .date-item {
-    transition: background-color 0.3s, color 0.3s;
-  }
-
-  .date-item.bg-primary {
-    border-color: var(--primary) !important;
-  }
-</style>
 {% endblock %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
