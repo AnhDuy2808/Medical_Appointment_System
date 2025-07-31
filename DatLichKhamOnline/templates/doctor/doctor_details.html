@@ -1,7 +1,7 @@
 {% extends 'layout/base.html' %}
 
 {% block title %}Thông tin Bác sĩ{% endblock %}
-
+{%block search_bar %} {%endblock%}
 {% block content %}
 <div class="container my-5">
     <div class="row">
@@ -15,19 +15,33 @@
                     {% endif %}
                     <h2>{{ doctor.first_name }} {{ doctor.last_name }}</h2>
                     <p class="text-muted">
-                        <i class="fas fa-stethoscope"></i> Chuyên khoa: 
-                        {% if doctor.specialties %}
-                          {{ doctor.specialties | map(attribute='name') | join(', ') }}
+                        <i class="fas fa-stethoscope"></i> Chuyên khoa:
+                       {% if doctor.doctor_departments %}
+                          {% set specialty_names = [] %}
+                          {% for dd in doctor.doctor_departments %}
+                            {% if dd.department %}{% set _ = specialty_names.append(dd.department.name) %}{% endif %}
+                          {% endfor %}
+                          {% if specialty_names %}
+                            {{ specialty_names | join(', ') }}
+                          {% else %}
+                            Chưa có chuyên khoa được gán
+                          {% endif %}
                         {% else %}
-                          Đang cập nhật
+                          Chưa có chuyên khoa được gán
                         {% endif %}
                     </p>
                     <p class="text-muted">
-                        <i class="fas fa-hospital"></i> Nơi công tác: 
-                        {% if doctor.work_places %}
-                          {{ doctor.work_places | map(attribute='name') | join(', ') }}
-                        {% else %}
-                          Đang cập nhật
+                        <i class="fas fa-hospital"></i> Nơi công tác:
+                        {% if doctor.doctor_medical_centers %}
+                            {% set medical_centers = [] %}
+                            {% for dmc in doctor.doctor_medical_centers %}
+                                {% if dmc.medical_center %} {%set _ = medical_centers.append(dmc.medical_center.name) %}{% endif %}
+                            {% endfor %}
+                            {% if medical_centers %}
+                                {{ medical_centers | join(', ') }}
+                            {% else %}
+                                Đang cập nhật
+                            {% endif %}
                         {% endif %}
                     </p>
                     <p>
