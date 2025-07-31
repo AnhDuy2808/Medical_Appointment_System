@@ -117,18 +117,27 @@
             <div class="form-group">
                 <label for="birth_of_day">Ngày sinh:</label>
                 <input type="date" class="form-control" id="birth_of_day" name="birth_of_day" required
-                       value="{{ current_user_info.birth_of_day.strftime('%Y-%m-%d') if current_user_info and current_user_info.birth_of_day else '' }}">
+                       value="{{ current_user_info.birth_of_day.strftime('%Y-%m-%d') if current_user_info and current_user_info.birth_of_day else '' }}"
+                       {% if current_user_info and current_user_info.birth_of_day %}readonly{% endif %}>
+                {% if current_user_info and current_user_info.birth_of_day %}
+                    <small class="form-text text-muted">Ngày sinh đã có, vui lòng cập nhật tại <a href="{{ url_for('profile') }}">Trang cá nhân</a> nếu muốn thay đổi.</small>
+                {% endif %}
             </div>
             <div class="form-group">
                 <label for="gender">Giới tính:</label>
-                <select class="form-control" id="gender" name="gender" required>
+                <select class="form-control" id="gender" name="gender" required
+                        {% if current_user_info and current_user_info.gender %}readonly{% endif %}>
                     <option value="">Chọn giới tính</option>
                     <option value="Male" {% if current_user_info and current_user_info.gender == 'Male' %}selected{% endif %}>Nam</option>
                     <option value="Female" {% if current_user_info and current_user_info.gender == 'Female' %}selected{% endif %}>Nữ</option>
                     <option value="Other" {% if current_user_info and current_user_info.gender == 'Other' %}selected{% endif %}>Khác</option>
                 </select>
+                {% if current_user_info and current_user_info.gender %}
+                    <small class="form-text text-muted">Giới tính đã có, vui lòng cập nhật tại <a href="{{ url_for('profile') }}">Trang cá nhân</a> nếu muốn thay đổi.</small>
+                {% endif %}
             </div>
 
+            {# ... (phần time-slots và các nút submit form nhỏ của từng khung giờ) ... #}
             <div class="time-slots mt-4">
                 {% if current_date_shifts %}
                     {% for session_name, session_shifts_list in current_date_shifts.items() %}
@@ -139,6 +148,7 @@
                             {# Mỗi nút khung giờ bây giờ là một submit button trong một form riêng #}
                             <form method="POST" action="{{ url_for('book_appointment', doctor_id=doctor.id) }}" style="display:inline-block;">
                                 <input type="hidden" name="ship_id" value="{{ shift.id }}">
+                                {# Truyền tất cả thông tin bệnh nhân vào các input hidden để submit cùng form #}
                                 <input type="hidden" name="first_name" value="{{ current_user_info.first_name if current_user_info else '' }}">
                                 <input type="hidden" name="last_name" value="{{ current_user_info.last_name if current_user_info else '' }}">
                                 <input type="hidden" name="birth_of_day" value="{{ current_user_info.birth_of_day.strftime('%Y-%m-%d') if current_user_info and current_user_info.birth_of_day else '' }}">
@@ -160,7 +170,6 @@
             <div class="contact-info text-muted mt-3">
                 Hỗ trợ đặt khám: 1900-2805
             </div>
-            {# Nút "ĐẶT KHÁM NGAY" sẽ bị loại bỏ hoặc không cần thiết nữa với luồng này #}
         </form>
       </div>
     </div>
