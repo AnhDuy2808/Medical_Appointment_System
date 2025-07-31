@@ -1,7 +1,7 @@
 {% extends 'layout/base.html' %}
 
 {% block title %}Đăng Nhập{% endblock %}
-
+{% block search_bar %}{% endblock %}{# Thêm dòng này để ẩn thanh tìm kiếm #}
 {% block content %}
 <div class="container my-5">
   <div class="row justify-content-center">
@@ -9,6 +9,13 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <h2 class="card-title text-center mb-4">Đăng Nhập</h2>
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
           <form method="POST" action="{{ url_for('user_login') }}">
             <div class="mb-3">
               <label for="username" class="form-label">Tên Đăng Nhập</label>
