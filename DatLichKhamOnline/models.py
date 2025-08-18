@@ -1,64 +1,55 @@
-# DatLichKhamOnline/models.py
-
-from sqlalchemy import Column, Integer, String, DateTime, Date, Time, ForeignKey
-from sqlalchemy.orm import relationship, backref
-from datetime import datetime, time, timedelta, date
-from enum import Enum as UserEnum
-from DatLichKhamOnline import app, db
 import hashlib
+import uuid
+from datetime import datetime, time
+from enum import Enum as PyEnum
+from typing import List
+
+from sqlalchemy import String, Date, Time, ForeignKey
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+
+from DatLichKhamOnline import app, db
 
 
-class BaseModel(db.Model):
+class Base(db.DeclarativeBase):
+    pass
+
+
+class BaseModel(Base):
     __abstract__ = True
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.now, onupdate=datetime.now)
 
 
-class UserRole(UserEnum):
+class UserRole(PyEnum):
     ADMIN = "admin"
     USER = "user"
     DOCTOR = "doctor"
 
 
-# Định nghĩa lớp Ticket trước User vì User cần tham chiếu đến Ticket.client_id
-class Ticket(BaseModel):
-    __tablename__ = 'tickets'
-    uuid = Column(String(255), unique=True, nullable=False)
-    shifts_id = Column(Integer, ForeignKey('shifts.id'), nullable=False)
-    client_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    status = Column(String(50), nullable=False)  # e.g., 'pending', 'confirmed', 'cancelled', 'completed'
-    first_name = Column(String(255))
-    last_name = Column(String(255))
-    birth_of_day = Column(Date)
-    gender = Column(String(50))
-    appointment_time = Column(Time)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Quan hệ sẽ được thiết lập sau khi các lớp User và Shift được định nghĩa
-    # client = relationship("User", back_populates="tickets_as_client")
-    # shifts = relationship("Shift", back_populates="tickets")
+class TicketStatus(PyEnum):
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    CANCELLED = "cancelled"
+    COMPLETED = "completed"
 
 
 class User(BaseModel):
     __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(128))
-    role = db.Column(db.Enum(UserRole), default=UserRole.USER)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    # Thêm các trường này
-    first_name = db.Column(db.String(50))
-    last_name = db.Column(db.String(50))
-    birth_of_day = db.Column(db.Date)
-    gender = db.Column(db.String(10))  # Male, Female, Other
-    phone = db.Column(db.String(20))
-    address = db.Column(db.String(200))
-    avatar = db.Column(db.String(255))
-    doctor_departments = relationship("DoctorDepartment", back_populates="user")
-    doctor_medical_centers = relationship("DoctorMedicalCenter", back_populates="user")
-    shifts = relationship("Shift", back_populates="doctor")
-    # Bây giờ Ticket đã được định nghĩa, nên có thể tham chiếu
-    tickets_as_client = relationship("Ticket", back_populates="client", foreign_keys=[Ticket.client_id])
+    email: Mapped[str] = mapped_column(String(120), unique=True)
+    password: Mapped[str] = mapped_column(String(128))
+    role: Mapped[UserRole]
+    username: Mapped[str] = mapped_column(String(80), unique=True)
+    first_name: Mapped[str] = mapped_column(db.String(50))
+    last_name: Mapped[str] = mapped_column(db.String(50))
+    birth_of_day: Mapped[Date] = mapped_column(db.Date, nullable=True)
+    gender: Mapped[str] = mapped_column(db.String(10), nullable=True)
+    phone: Mapped[str] = mapped_column(db.String(20), nullable=True)
+    address: Mapped[str] = mapped_column(db.String(200), nullable=True)
+    avatar: Mapped[str] = mapped_column(db.String(255), nullable=True)
+
+    doctor: Mapped["Doctor"] = relationship(back_populates="user")
+    tickets: Mapped[List["Ticket"]] = relationship(back_populates="client")
 
     def __str__(self):
         return f"{self.first_name or ''} {self.last_name or ''}".strip()
@@ -73,16 +64,13 @@ class User(BaseModel):
 
 class MedicalCenter(BaseModel):
     __tablename__ = 'medical_centers'
-    name = Column(String(255), nullable=False)
-    address = Column(String(255))
-    phone = Column(String(20))
-    description = Column(String(255))
-    image = Column(String(255))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    name: Mapped[str] = mapped_column(db.String(255))
+    address: Mapped[str] = mapped_column(db.String(255), nullable=True)
+    phone: Mapped[str] = mapped_column(db.String(20), nullable=True)
+    description: Mapped[str] = mapped_column(db.String(255), nullable=True)
+    image: Mapped[str] = mapped_column(db.String(255), nullable=True)
 
-    doctor_medical_centers = relationship("DoctorMedicalCenter", back_populates="medical_center")
-    shifts = relationship("Shift", back_populates="medical_center")
+    doctors: Mapped[List["Doctor"]] = relationship(back_populates="medical_center")
 
     def __str__(self):
         return self.name
@@ -90,85 +78,96 @@ class MedicalCenter(BaseModel):
 
 class Department(BaseModel):
     __tablename__ = 'departments'
-    name = Column(String(255), nullable=False)
-    description = Column(String(255))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    name: Mapped[str] = mapped_column(String(255))
+    description: Mapped[str] = mapped_column(String(255), nullable=True)
 
-    doctor_departments = relationship("DoctorDepartment", back_populates="department")
+    doctor_departments: Mapped[List["DoctorDepartment"]] = relationship(back_populates="department")
 
     def __str__(self):
         return self.name
 
 
+class Doctor(BaseModel):
+    __tablename__ = 'doctors'
+    id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
+    medical_center_id = mapped_column(ForeignKey('medical_centers.id'))
+    description: Mapped[str] = mapped_column(String(255), nullable=True)
+
+    user: Mapped[User] = relationship(back_populates="doctor")
+    medical_center: Mapped[MedicalCenter] = relationship(back_populates="doctors")
+    doctor_departments: Mapped[List["DoctorDepartment"]] = relationship(back_populates="doctor")
+    doctor_shifts: Mapped[List["DoctorShift"]] = relationship(back_populates="doctor")
+
+
 class DoctorDepartment(BaseModel):
     __tablename__ = 'doctor_departments'
-    doctor_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
-    department_id = Column(Integer, ForeignKey('departments.id'), primary_key=True)
-    description = Column(String(255))
+    doctor_id: Mapped[int] = mapped_column(ForeignKey('doctors.id'))
+    department_id: Mapped[int] = mapped_column(ForeignKey('departments.id'))
 
-    user = relationship("User", back_populates="doctor_departments")
-    department = relationship("Department", back_populates="doctor_departments")
-
-
-class DoctorMedicalCenter(BaseModel):
-    __tablename__ = 'doctor_medical_centers'
-    doctor_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
-    medical_center_id = Column(Integer, ForeignKey('medical_centers.id'), primary_key=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    user = relationship("User", back_populates="doctor_medical_centers")
-    medical_center = relationship("MedicalCenter", back_populates="doctor_medical_centers")
+    doctor: Mapped[Doctor] = relationship(back_populates="doctor_departments")
+    department: Mapped[Department] = relationship(back_populates="doctor_departments")
 
 
 class Shift(BaseModel):
     __tablename__ = 'shifts'
-    doctor_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    medical_center_id = Column(Integer, ForeignKey('medical_centers.id'), nullable=False)
-    work_date = Column(Date, nullable=False)
-    start_time = Column(Time, nullable=False)
-    end_time = Column(Time, nullable=False)
-    max_patients = Column(Integer, default=0)
-    current_patients = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    start_time: Mapped[Time] = mapped_column(db.Time)
+    end_time: Mapped[Time] = mapped_column(db.Time)
 
-    doctor = relationship("User", back_populates="shifts")
-    medical_center = relationship("MedicalCenter", back_populates="shifts")
-    tickets = relationship("Ticket", back_populates="shifts", lazy=True)
+    doctor_shifts: Mapped[List["DoctorShift"]] = relationship(back_populates="shift")
 
 
-# Sau khi tất cả các lớp liên quan đã được định nghĩa, thiết lập mối quan hệ còn thiếu cho Ticket
-Ticket.client = relationship("User", back_populates="tickets_as_client")
-Ticket.shifts = relationship("Shift", back_populates="tickets")
+class DoctorShift(BaseModel):
+    __tablename__ = 'doctor_shifts'
+    doctor_id: Mapped[int] = mapped_column(ForeignKey('doctors.id'))
+    shift_id: Mapped[int] = mapped_column(ForeignKey('shifts.id'))
+    work_date: Mapped[Date] = mapped_column(db.Date)
+
+    doctor: Mapped[Doctor] = relationship(back_populates="doctor_shifts")
+    shift: Mapped[Shift] = relationship(back_populates="doctor_shifts")
+    ticket: Mapped["Ticket"] = relationship(back_populates="doctor_shift")
+
+
+class Ticket(BaseModel):
+    __tablename__ = 'tickets'
+    uuid: Mapped[str] = mapped_column(db.String(255), unique=True, default=uuid.uuid4())
+    doctor_shift_id: Mapped[int] = mapped_column(ForeignKey('doctor_shifts.id'), unique=True)
+    client_id: Mapped[int] = mapped_column(db.Integer, ForeignKey('users.id'))
+    status: Mapped[TicketStatus]
+    first_name: Mapped[str] = mapped_column(db.String(255))
+    last_name: Mapped[str] = mapped_column(db.String(255))
+    birth_of_day: Mapped[Date] = mapped_column(db.Date)
+    gender: Mapped[str] = mapped_column(db.String(50))
+    appointment_date: Mapped[Date] = mapped_column(Date)
+
+    doctor_shift: Mapped[DoctorShift] = relationship(back_populates="ticket")
+    client: Mapped[User] = relationship(back_populates="tickets")
+
 
 if __name__ == '__main__':
     with app.app_context():
         print("Đang xóa và tạo lại các bảng...")
-        db.drop_all()
-        db.create_all()
+        Base.metadata.drop_all(db.engine)
+        Base.metadata.create_all(db.engine)
         print("Hoàn tất!")
 
         print("\n--- Đang tạo dữ liệu mẫu ---")
 
-        # Tạo người dùng mẫu: băm mật khẩu bằng MD5
+        # # Tạo người dùng mẫu: băm mật khẩu bằng MD5
         admin_user = User(username='admin', password=User.hash_password('123'), email='admin@example.com',
                           role=UserRole.ADMIN.value, first_name='Admin', last_name='System')
-        doctor1 = User(username='doc1', password=User.hash_password('123'), email='doctor1@example.com',
-                       role=UserRole.DOCTOR.value, first_name='Lâm Việt', last_name='Trung')
-        doctor2 = User(username='doc2', password=User.hash_password('123'), email='doctor2@example.com',
-                       role=UserRole.DOCTOR.value, first_name='Phạm Thị', last_name='Mai')
-        doctor3 = User(username='doc3', password=User.hash_password('123'), email='doctor3@example.com',
-                       role=UserRole.DOCTOR.value, first_name='Lê Văn', last_name='Dũng')
-        doctor4 = User(username='doc4', password=User.hash_password('123'), email='doctor4@example.com',
-                       role=UserRole.DOCTOR.value, first_name='Trần Thị', last_name='Hương')
-        client1 = User(username='client1', password=User.hash_password('123'), email='client1@example.com',
-                       role=UserRole.USER.value, first_name='Khách', last_name='Hàng A')
+        u1 = User(username='doc1', password=User.hash_password('123'), email='doctor1@example.com',
+                  role=UserRole.DOCTOR.value, first_name='Lâm Việt', last_name='Trung')
+        u2 = User(username='doc2', password=User.hash_password('123'), email='doctor2@example.com',
+                  role=UserRole.DOCTOR.value, first_name='Phạm Thị', last_name='Mai')
+        u3 = User(username='doc3', password=User.hash_password('123'), email='doctor3@example.com',
+                  role=UserRole.DOCTOR.value, first_name='Lê Văn', last_name='Dũng')
+        u4 = User(username='doc4', password=User.hash_password('123'), email='doctor4@example.com',
+                  role=UserRole.DOCTOR.value, first_name='Trần Thị', last_name='Hương')
+        u5 = User(username='client1', password=User.hash_password('123'), email='client1@example.com',
+                  role=UserRole.USER.value, first_name='Khách', last_name='Hàng A')
 
-        db.session.add_all([admin_user, doctor1, doctor2, doctor3, doctor4, client1])
+        db.session.add_all([admin_user, u1, u2, u3, u4, u5])
         db.session.commit()
-        print("Đã tạo người dùng mẫu.")
 
         # Tạo trung tâm y tế
         mc1 = MedicalCenter(name='Bệnh viện Đa khoa Quốc tế', address='123 Đường ABC, Quận 1', phone='0281234567',
@@ -177,7 +176,6 @@ if __name__ == '__main__':
                             phone='0289876543', description='Chuyên khoa răng hàm mặt uy tín')
         db.session.add_all([mc1, mc2])
         db.session.commit()
-        print("Đã tạo trung tâm y tế mẫu.")
 
         # Tạo các khoa
         dep1 = Department(name='Khoa Tim mạch', description='Chuyên khám và điều trị bệnh tim')
@@ -185,53 +183,69 @@ if __name__ == '__main__':
         dep3 = Department(name='Khoa Nhi', description='Chuyên khám và điều trị cho trẻ em')
         db.session.add_all([dep1, dep2, dep3])
         db.session.commit()
-        print("Đã tạo các khoa mẫu.")
 
-        # Gán bác sĩ vào khoa và trung tâm y tế
-        dd1 = DoctorDepartment(doctor_id=doctor1.id, department_id=dep1.id)
-        dd2 = DoctorDepartment(doctor_id=doctor2.id, department_id=dep2.id)
-        dd3 = DoctorDepartment(doctor_id=doctor3.id, department_id=dep1.id)
-        dd4 = DoctorDepartment(doctor_id=doctor4.id, department_id=dep3.id)
+        d1 = Doctor(id=u1.id, medical_center_id=mc1.id)
+        d2 = Doctor(id=u2.id, medical_center_id=mc2.id)
+        d3 = Doctor(id=u3.id, medical_center_id=mc1.id)
+        d4 = Doctor(id=u4.id, medical_center_id=mc2.id)
+        db.session.add_all([d1, d2, d3, d4])
+        db.session.commit()
+
+        dd1 = DoctorDepartment(doctor_id=d1.id, department_id=dep1.id)
+        dd2 = DoctorDepartment(doctor_id=d2.id, department_id=dep2.id)
+        dd3 = DoctorDepartment(doctor_id=d3.id, department_id=dep1.id)
+        dd4 = DoctorDepartment(doctor_id=d4.id, department_id=dep3.id)
         db.session.add_all([dd1, dd2, dd3, dd4])
-
-        dmc1 = DoctorMedicalCenter(doctor_id=doctor1.id, medical_center_id=mc1.id)
-        dmc2 = DoctorMedicalCenter(doctor_id=doctor2.id, medical_center_id=mc1.id)
-        dmc3 = DoctorMedicalCenter(doctor_id=doctor3.id, medical_center_id=mc2.id)
-        dmc4 = DoctorMedicalCenter(doctor_id=doctor4.id, medical_center_id=mc1.id)
-        db.session.add_all([dmc1, dmc2, dmc3, dmc4])
         db.session.commit()
-        print("Đã gán bác sĩ vào khoa và trung tâm y tế.")
 
-        # Tạo ca làm việc (Shift) cho bác sĩ
-        today = date.today()
-        tomorrow = today + timedelta(days=1)
-        day_after_tomorrow = today + timedelta(days=2)
+        # Tạo các ca (cố định)
+        shift1 = Shift(start_time=time(7, 0), end_time=time(7, 30))
+        shift2 = Shift(start_time=time(7, 30), end_time=time(8, 0))
+        shift3 = Shift(start_time=time(8, 0), end_time=time(8, 30))
+        shift4 = Shift(start_time=time(8, 30), end_time=time(9, 0))
+        shift5 = Shift(start_time=time(9, 0), end_time=time(9, 30))
+        shift6 = Shift(start_time=time(9, 30), end_time=time(10, 0))
+        shift7 = Shift(start_time=time(10, 0), end_time=time(10, 30))
+        shift8 = Shift(start_time=time(10, 30), end_time=time(11, 0))
+        shift9 = Shift(start_time=time(11, 0), end_time=time(11, 30))
+        shift10 = Shift(start_time=time(11, 30), end_time=time(12, 0))
+        shift11 = Shift(start_time=time(12, 0), end_time=time(12, 30))
+        shift12 = Shift(start_time=time(12, 30), end_time=time(13, 0))
+        shift13 = Shift(start_time=time(13, 0), end_time=time(13, 30))
+        shift14 = Shift(start_time=time(13, 30), end_time=time(14, 0))
+        shift15 = Shift(start_time=time(14, 0), end_time=time(14, 30))
+        shift16 = Shift(start_time=time(14, 30), end_time=time(15, 0))
+        shift17 = Shift(start_time=time(15, 0), end_time=time(15, 30))
+        shift18 = Shift(start_time=time(15, 30), end_time=time(16, 0))
+        shift19 = Shift(start_time=time(16, 0), end_time=time(16, 30))
+        shift20 = Shift(start_time=time(16, 30), end_time=time(17, 0))
+        shift21 = Shift(start_time=time(17, 0), end_time=time(17, 30))
+        shift22 = Shift(start_time=time(17, 30), end_time=time(18, 0))
 
-        s1 = Shift(doctor_id=doctor1.id, medical_center_id=mc1.id, work_date=today, start_time=time(8, 0),
-                   end_time=time(12, 0), max_patients=10, current_patients=0)
-        s2 = Shift(doctor_id=doctor1.id, medical_center_id=mc1.id, work_date=today, start_time=time(13, 0),
-                   end_time=time(17, 0), max_patients=10, current_patients=0)
-        s3 = Shift(doctor_id=doctor2.id, medical_center_id=mc1.id, work_date=tomorrow, start_time=time(9, 0),
-                   end_time=time(12, 0), max_patients=10, current_patients=0)
-        s4 = Shift(doctor_id=doctor3.id, medical_center_id=mc2.id, work_date=day_after_tomorrow, start_time=time(14, 0),
-                   end_time=time(18, 0), max_patients=10, current_patients=0)
-        db.session.add_all([s1, s2, s3, s4])
+        db.session.add_all([
+            shift1, shift2, shift3, shift4, shift5, shift6, shift7, shift8, shift9, shift10,
+            shift11, shift12, shift13, shift14, shift15, shift16, shift17, shift18, shift19, shift20,
+            shift21, shift22
+        ])
         db.session.commit()
-        print("Đã tạo ca làm việc mẫu.")
 
-        # Tạo một vé đặt lịch mẫu để kiểm tra trang payment
-        ticket1 = Ticket(
-            uuid="ticket-sample-12345",
-            shifts_id=s1.id,
-            client_id=client1.id,
-            status="pending",
-            first_name=client1.first_name,
-            last_name=client1.last_name,
-            birth_of_day=date(1995, 5, 10),
-            gender="Male",
-            appointment_time=s1.start_time
-        )
-        db.session.add(ticket1)
+        ds1 = DoctorShift(doctor_id=d1.id, shift_id=shift1.id, work_date=datetime.now().date())
+        ds2 = DoctorShift(doctor_id=d1.id, shift_id=shift2.id, work_date=datetime.now().date())
+        ds3 = DoctorShift(doctor_id=d1.id, shift_id=shift3.id, work_date=datetime.now().date())
+        ds4 = DoctorShift(doctor_id=d2.id, shift_id=shift1.id, work_date=datetime.now().date())
+        ds5 = DoctorShift(doctor_id=d2.id, shift_id=shift2.id, work_date=datetime.now().date())
+        ds6 = DoctorShift(doctor_id=d2.id, shift_id=shift3.id, work_date=datetime.now().date())
+        ds7 = DoctorShift(doctor_id=d3.id, shift_id=shift1.id, work_date=datetime.now().date())
+        ds8 = DoctorShift(doctor_id=d3.id, shift_id=shift2.id, work_date=datetime.now().date())
+        ds9 = DoctorShift(doctor_id=d3.id, shift_id=shift3.id, work_date=datetime.now().date())
+        ds10 = DoctorShift(doctor_id=d4.id, shift_id=shift1.id, work_date=datetime.now().date())
+        ds11 = DoctorShift(doctor_id=d4.id, shift_id=shift2.id, work_date=datetime.now().date())
+        ds12 = DoctorShift(doctor_id=d4.id, shift_id=shift3.id, work_date=datetime.now().date())
+        db.session.add_all([ds1, ds2, ds3, ds4, ds5, ds6, ds7, ds8, ds9, ds10, ds11, ds12])
         db.session.commit()
-        print(f"Đã tạo vé đặt lịch mẫu với ID: {ticket1.id}")
+
+        ticket = Ticket(client_id=u5.id, doctor_shift_id=ds1.id, status=TicketStatus.PENDING.value, first_name='Hien', last_name='Trung', birth_of_day=datetime.now().date(), gender='Nam', appointment_date=datetime.now().date())
+        db.session.add(ticket)
+        db.session.commit()
+
         print("\n--- Hoàn thành tạo dữ liệu mẫu ---")
