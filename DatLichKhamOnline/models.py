@@ -137,7 +137,6 @@ class Ticket(BaseModel):
     last_name: Mapped[str] = mapped_column(db.String(255))
     birth_of_day: Mapped[Date] = mapped_column(db.Date)
     gender: Mapped[str] = mapped_column(db.String(50))
-    appointment_date: Mapped[Date] = mapped_column(Date)
 
     doctor_shift: Mapped[DoctorShift] = relationship(back_populates="ticket")
     client: Mapped[User] = relationship(back_populates="tickets")

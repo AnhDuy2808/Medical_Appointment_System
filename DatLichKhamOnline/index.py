@@ -1,9 +1,11 @@
 # DatLichKhamOnline/index.py
+from sqlalchemy.orm.attributes import InstrumentedAttribute
+from sqlalchemy.sql.sqltypes import Date
 
 import utils
 from DatLichKhamOnline import app, db # Đảm bảo db được import
 from flask import render_template, request, flash, redirect, url_for, session, g # Import g để lưu biến global cho request
-from models import User, MedicalCenter, DoctorDepartment, Department, DoctorMedicalCenter, Shift, Ticket, UserRole # Import UserRole
+from models import User, MedicalCenter, DoctorDepartment, Department, Shift, Ticket, UserRole, Doctor, DoctorShift, TicketStatus
 from datetime import datetime, date, time, timedelta
 from sqlalchemy.orm import joinedload
 import uuid
@@ -136,8 +138,8 @@ def book_appointment(doctor_id):
     # Lấy thông tin bác sĩ CÙNG VỚI CÁC THÔNG TIN CHUYÊN KHOA VÀ TRUNG TÂM Y TẾ CẦN THIẾT
     doctor = db.session.query(User).options(
         joinedload(User.doctor_departments).joinedload(DoctorDepartment.department),
-        joinedload(User.doctor_medical_centers).joinedload(DoctorMedicalCenter.medical_center)
-    ).filter(User.id == doctor_id, User.role == UserRole.DOCTOR.value).first()
+        joinedload(User.doctor_medical_centers).joinedload(Doctor.medical_center)
+    ).filter(Doctor.id == doctor_id).first()
 
     if not doctor:
         flash('Không tìm thấy bác sĩ này.', 'danger')
@@ -154,7 +156,7 @@ def book_appointment(doctor_id):
 
     if request.method == 'POST':
         # Đây là khi một khung giờ được chọn và submit dưới dạng form
-        ship_id = request.form.get('ship_id')
+        doctor_shift_id = request.form.get('doctor_shift_id')
 
         # Lấy thông tin bệnh nhân từ form
         first_name = request.form.get('first_name')
@@ -163,15 +165,15 @@ def book_appointment(doctor_id):
         gender = request.form.get('gender')
 
         # Kiểm tra dữ liệu bắt buộc
-        if not ship_id:
+        if not doctor_shift_id:
             flash('Vui lòng chọn một khung giờ.', 'danger')
             return redirect(url_for('book_appointment', doctor_id=doctor_id, appointment_date=selected_date_str or ''))
         if not first_name or not last_name or not birth_of_day_str or not gender:
             flash('Vui lòng điền đầy đủ thông tin bệnh nhân.', 'danger')
             return redirect(url_for('book_appointment', doctor_id=doctor_id, appointment_date=selected_date_str or ''))
 
-        ship = db.session.query(Shift).filter_by(id=ship_id).first()
-        if not ship:
+        doctor_shift = db.session.query(DoctorShift).filter_by(id=doctor_shift_id).options(joinedload(DoctorShift.shift)).first()
+        if not doctor_shift:
             flash('Khung giờ không hợp lệ.', 'danger')
             return redirect(url_for('book_appointment', doctor_id=doctor_id, appointment_date=selected_date_str or ''))
 
@@ -187,16 +189,16 @@ def book_appointment(doctor_id):
             return redirect(url_for('book_appointment', doctor_id=doctor_id, appointment_date=selected_date_str or ''))
 
         # --- Bắt đầu kiểm tra "1 người 1 lịch khám trong ngày của bác sĩ" ---
-        existing_ticket = db.session.query(Ticket).join(Shift).filter(
+        existing_ticket = db.session.query(Ticket).join(DoctorShift).filter(
             Ticket.client_id == client_id,
-            Shift.doctor_id == doctor_id,
-            Shift.work_date == ship.work_date,  # Kiểm tra trên cùng ngày làm việc
-            Ticket.status.in_(['pending', 'confirmed'])  # Trạng thái đang chờ hoặc đã xác nhận
+            DoctorShift.doctor_id == doctor_id,
+            DoctorShift.work_date == DoctorShift.work_date,  # Kiểm tra trên cùng ngày làm việc
+            Ticket.status.in_([TicketStatus.PENDING, TicketStatus.CONFIRMED])  # Trạng thái đang chờ hoặc đã xác nhận
         ).first()
 
         if existing_ticket:
             flash(
-                f'Bạn đã có lịch khám với bác sĩ {doctor.first_name} {doctor.last_name} vào ngày {ship.work_date.strftime("%d/%m/%Y")} rồi.',
+                f'Bạn đã có lịch khám với bác sĩ {doctor.first_name} {doctor.last_name} vào ngày {doctor_shift.work_date.strftime("%d/%m/%Y")} rồi.',
                 'warning')
             return redirect(url_for('book_appointment', doctor_id=doctor_id, appointment_date=selected_date_str or ''))
         # --- Kết thúc kiểm tra ---
@@ -205,14 +207,13 @@ def book_appointment(doctor_id):
         new_ticket_uuid = str(uuid.uuid4())
         new_ticket = Ticket(
             uuid=new_ticket_uuid,
-            shifts_id=ship.id,
+            doctor_shift_id=doctor_shift.id,
             client_id=client_id,
-            status="pending",  # Trạng thái mặc định
+            status=TicketStatus.PENDING,  # Trạng thái mặc định
             first_name=first_name,
             last_name=last_name,
             birth_of_day=birth_of_day,
             gender=gender,
-            appointment_time=ship.start_time  # Thời gian hẹn là thời gian bắt đầu của ca làm việc
         )
         db.session.add(new_ticket)
         db.session.commit()
@@ -221,17 +222,17 @@ def book_appointment(doctor_id):
 
     # Logic cho GET request (hiển thị form đặt lịch)
     # Lấy tất cả các ca làm việc của bác sĩ trong tương lai
-    all_shifts = db.session.query(Shift).filter(
-        Shift.doctor_id == doctor_id,
-        Shift.work_date >= date.today()
-    ).order_by(Shift.work_date, Shift.start_time).all()
+    all_doctor_shifts: list[DoctorShift] = db.session.query(DoctorShift).join(DoctorShift.shift).filter(
+        DoctorShift.doctor_id == doctor_id,
+        DoctorShift.work_date >= date.today()
+    ).order_by(DoctorShift.work_date).all()
 
     # Nhóm các ca làm việc theo ngày để hiển thị thanh chọn ngày
-    shifts_by_work_date = {}
-    for shift in all_shifts:
-        if shift.work_date not in shifts_by_work_date:
-            shifts_by_work_date[shift.work_date] = []
-        shifts_by_work_date[shift.work_date].append(shift)
+    shifts_by_work_date: dict[InstrumentedAttribute[Date], list[DoctorShift]] = {}
+    for doctor_shift in all_doctor_shifts:
+        if doctor_shift.work_date not in shifts_by_work_date:
+            shifts_by_work_date[doctor_shift.work_date] = []
+        shifts_by_work_date[doctor_shift.work_date].append(doctor_shift)
 
     # Chuẩn bị dữ liệu available_dates cho template
     available_dates_for_template = []
@@ -257,11 +258,11 @@ def book_appointment(doctor_id):
         # Nhóm ca làm việc của ngày đã chọn thành sáng/chiều
         morning_shifts = []
         afternoon_shifts = []
-        for shift in shifts_by_work_date[selected_date_obj]:
-            if shift.start_time < time(12, 0):  # Trước 12h là sáng
-                morning_shifts.append(shift)
+        for doctor_shift in shifts_by_work_date[selected_date_obj]:
+            if doctor_shift.shift.start_time < time(12, 0):  # Trước 12h là sáng
+                morning_shifts.append(doctor_shift)
             else:  # Từ 12h trở đi là chiều
-                afternoon_shifts.append(shift)
+                afternoon_shifts.append(doctor_shift)
 
         if morning_shifts:
             current_date_shifts['Buổi Sáng'] = morning_shifts
@@ -284,8 +285,8 @@ def book_appointment(doctor_id):
 @app.route('/payment/<string:ticket_uuid>')
 def payment(ticket_uuid):
     ticket = db.session.query(Ticket).options(
-        joinedload(Ticket.shifts).joinedload(Shift.doctor).joinedload(User.doctor_departments).joinedload(DoctorDepartment.department),
-        joinedload(Ticket.shifts).joinedload(Shift.medical_center) # ĐẢM BẢO CŨNG ĐÚNG Ở ĐÂY
+        joinedload(Ticket.doctor_shift).joinedload(DoctorShift.doctor).joinedload(Doctor.doctor_departments).joinedload(DoctorDepartment.department),
+        joinedload(DoctorShift.shift) # ĐẢM BẢO CŨNG ĐÚNG Ở ĐÂY
     ).filter(Ticket.uuid == ticket_uuid).first()
 
     if not ticket:
@@ -302,20 +303,21 @@ def medical_center_details(medical_center_id):
 @app.route('/doctor_details/<int:doctor_id>')
 def doctor_details(doctor_id):
     # Tải thông tin bác sĩ, bao gồm các khoa và trung tâm y tế liên quan
-    doctor = db.session.query(User).options(
-        joinedload(User.doctor_departments).joinedload(DoctorDepartment.department),
-        joinedload(User.doctor_medical_centers).joinedload(DoctorMedicalCenter.medical_center)
-    ).filter(User.id == doctor_id, User.role == UserRole.DOCTOR.value).first()
+    doctor = db.session.query(Doctor).options(
+        joinedload(Doctor.doctor_departments).joinedload(DoctorDepartment.department)
+        .joinedload(Doctor.medical_center)
+        .joinedload(Doctor.user)
+    ).filter(Doctor.id == doctor_id).first()
 
     if not doctor:
         flash('Không tìm thấy bác sĩ này.', 'danger')
         return redirect(url_for('search_doctor')) # Hoặc home nếu không có search_doctor
 
     # Lấy các ca làm việc của bác sĩ này trong tương lai
-    shifts = db.session.query(Shift).filter(
-        Shift.doctor_id == doctor_id,
-        Shift.work_date >= date.today()
-    ).order_by(Shift.work_date, Shift.start_time).all()
+    shifts = db.session.query(DoctorShift).filter(
+        DoctorShift.doctor_id == doctor_id,
+        DoctorShift.work_date > date.today()
+    ).options(joinedload(DoctorShift.shift)).order_by(DoctorShift.work_date).all()
 
     # Nhóm các ca làm việc theo ngày
     shifts_by_date = {}
