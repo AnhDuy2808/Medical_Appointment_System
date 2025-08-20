@@ -28,9 +28,9 @@
         <div class="card-body text-center">
           <h5 class="card-title mt-2">{{ doctor.first_name }} {{ doctor.last_name }}</h5>
           <p class="card-text text-muted small">
-            {% if doctor.doctor_departments %}
+            {% if doctor.doctor.doctor_departments %}
               <i class="fas fa-stethoscope mr-1"></i> Khoa:
-              {% for dd in doctor.doctor_departments %}
+              {% for dd in doctor.doctor.doctor_departments %}
                 {{ dd.department.name }}{% if not loop.last %}, {% endif %}
               {% endfor %}
             {% else %}

@@ -90,7 +90,7 @@ class Department(BaseModel):
 class Doctor(BaseModel):
     __tablename__ = 'doctors'
     id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
-    medical_center_id = mapped_column(ForeignKey('medical_centers.id'))
+    medical_center_id = mapped_column(ForeignKey('medical_centers.id'), nullable=True)
     description: Mapped[str] = mapped_column(String(255), nullable=True)
 
     user: Mapped[User] = relationship(back_populates="doctor")
@@ -243,7 +243,7 @@ if __name__ == '__main__':
         db.session.add_all([ds1, ds2, ds3, ds4, ds5, ds6, ds7, ds8, ds9, ds10, ds11, ds12])
         db.session.commit()
 
-        ticket = Ticket(client_id=u5.id, doctor_shift_id=ds1.id, status=TicketStatus.PENDING.value, first_name='Hien', last_name='Trung', birth_of_day=datetime.now().date(), gender='Nam', appointment_date=datetime.now().date())
+        ticket = Ticket(client_id=u5.id, doctor_shift_id=ds1.id, status=TicketStatus.PENDING.value, first_name='Hien', last_name='Trung', birth_of_day=datetime.now().date(), gender='Nam')
         db.session.add(ticket)
         db.session.commit()
 

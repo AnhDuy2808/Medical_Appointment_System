@@ -1,0 +1,8 @@
+[*.py]
+tab_width = 4
+indent_style = space
+
+[*.html]
+tab_width = 2
+indent_style = space
+indent_size = 2
