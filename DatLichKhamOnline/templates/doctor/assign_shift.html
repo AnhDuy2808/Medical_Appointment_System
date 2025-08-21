@@ -1,0 +1,100 @@
+{% extends 'layout/base.html' %}
+
+{% block search_bar %}{% endblock %}
+{% block content %}
+  <div class="container my-4">
+    <div class="border boder-1 rounded p-3">
+      <h1 class="h1">Quản lý lịch làm việc <span class="fs-4 text-primary">{{ date.strftime("%d/%m/%Y") }}</span></h1>
+      <form class="row g-3 align-items-end" method="get" action="{{ url_for('assign_shift') }}">
+        <div class="col-auto">
+          <label for="date" class="form-label mb-0">Chọn ngày</label>
+          <input type="date" id="date" name="date" class="form-control" value="{{ date }}" />
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary">Lọc</button>
+        </div>
+      </form>
+
+      <div class="mt-4">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <strong>Ca làm việc:</strong>
+          <span class="badge text-bg-success">Đã đăng ký</span>
+          <span class="badge text-bg-secondary">Chưa đăng ký</span>
+          <span class="badge text-bg-warning">Đang chọn</span>
+          <span class="badge text-bg-danger">Chọn hủy</span>
+        </div>
+
+        {% set assigned_shift_ids = doctor_shifts | map(attribute='shift_id') | list %}
+        <form id="assignForm" method="post" action="{{ url_for('assign_shift') }}">
+          <input type="hidden" name="date" value="{{ date }}" />
+          <input type="hidden" name="assign_shift_ids" id="assign_shift_ids" value="" />
+          <input type="hidden" name="unassign_shift_ids" id="unassign_shift_ids" value="" />
+
+          <div class="d-flex flex-wrap gap-2">
+            {% for shift in shifts %}
+              {% set is_assigned = (shift.id in assigned_shift_ids) %}
+              <button
+                type="button"
+                class="btn {% if is_assigned %}btn-success{% else %}btn-outline-secondary{% endif %}"
+                data-shift-id="{{ shift.id }}"
+                data-assigned="{{ 'true' if is_assigned else 'false' }}"
+              >
+                {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }} <br/>
+              </button>
+            {% endfor %}
+          </div>
+
+          <div class="mt-3">
+            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const toAssignShiftIds = new Set();
+      const toUnassignShiftIds = new Set();
+      const buttons = document.querySelectorAll('button[data-shift-id]');
+      const form = document.getElementById('assignForm');
+      const assignInput = document.getElementById('assign_shift_ids');
+      const unassignInput = document.getElementById('unassign_shift_ids');
+
+      buttons.forEach(btn => {
+        const isAssigned = btn.getAttribute('data-assigned') === 'true';
+
+        btn.addEventListener('click', function () {
+          const id = btn.getAttribute('data-shift-id');
+          if (isAssigned) {
+            const markedForUnassign = toUnassignShiftIds.has(id);
+            if (markedForUnassign) {
+              toUnassignShiftIds.delete(id);
+              btn.classList.remove('btn-danger');
+              btn.classList.add('btn-success');
+            } else {
+              toUnassignShiftIds.add(id);
+              btn.classList.add('btn-danger');
+              btn.classList.remove('btn-success');
+            }
+          } else {
+            const markedForAssign = toAssignShiftIds.has(id);
+            if (markedForAssign) {
+              toAssignShiftIds.delete(id);
+              btn.classList.remove('btn-warning');
+              btn.classList.add('btn-outline-secondary');
+            } else {
+              toAssignShiftIds.add(id);
+              btn.classList.add('btn-warning');
+              btn.classList.remove('btn-outline-secondary');
+            }
+          }
+        });
+      });
+
+      form.addEventListener('submit', function () {
+        assignInput.value = Array.from(toAssignShiftIds).join(',');
+        unassignInput.value = Array.from(toUnassignShiftIds).join(',');
+      });
+    });
+  </script>
+{% endblock %}

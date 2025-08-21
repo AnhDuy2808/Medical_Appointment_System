@@ -10,7 +10,8 @@ from sqlalchemy.sql.sqltypes import Date
 
 from DatLichKhamOnline import app, db  # Đảm bảo db được import
 from models import User, MedicalCenter, DoctorDepartment, Department, Ticket, UserRole, Doctor, DoctorShift, \
-    TicketStatus
+    TicketStatus, Shift
+from utils import str_to_datetime
 
 
 # Middleware để tải thông tin người dùng trước mỗi request
@@ -392,6 +393,118 @@ def profile():
         return redirect(url_for('profile'))
 
     return render_template('user/profile.html', user=user)
+
+
+@app.route('/assign-shift', methods=['GET', 'POST'])
+def assign_shift():
+    user_id = session.get('user_id')
+    date_query = request.args.get('date', None)
+    selected_datetime = str_to_datetime(date_query)
+
+    if not user_id:
+        flash('Vui lòng đăng nhập để xem thông tin cá nhân.', 'warning')
+        return redirect(url_for('user_login'))
+
+    user = db.session.query(User).filter(User.id == user_id).first()
+    if not user:
+        flash('Không tìm thấy thông tin người dùng.', 'danger')
+        # Xóa session nếu user không tồn tại trong DB
+        session.pop('user_id', None)
+        return redirect(url_for('user_login'))
+
+    if user.role != UserRole.DOCTOR:
+        flash('Bạn không có quyền truy cập vào trang này', 'danger')
+        return redirect(url_for('home'))
+
+    if request.method == 'GET':
+        shifts = db.session.query(Shift).all()
+        doctor_shifts = db.session.query(DoctorShift).join(Doctor).join(User).join(Shift).filter(
+            DoctorShift.doctor_id == user.id,
+            DoctorShift.work_date == selected_datetime.date()
+        ).all()
+
+        return render_template(
+            'doctor/assign_shift.html',
+            shifts=shifts,
+            doctor_shifts=doctor_shifts,
+            date=selected_datetime.date(),
+        )
+
+    if request.method == 'POST':
+        date_query = request.form.get('date', None)
+        selected_datetime = str_to_datetime(date_query)
+
+        assign_ids_raw = request.form.get('assign_shift_ids', '')
+        unassign_ids_raw = request.form.get('unassign_shift_ids', '')
+
+        try:
+            assign_ids = [int(x) for x in assign_ids_raw.split(',') if x.strip()]
+            unassign_ids = [int(x) for x in unassign_ids_raw.split(',') if x.strip()]
+        except ValueError:
+            assign_ids, unassign_ids = [], []
+
+        assigned_count = 0
+        unassigned_count = 0
+        blocked_unassign: list[int] = []
+
+        for shift_id in assign_ids:
+            shift = db.session.query(Shift).filter(Shift.id == shift_id).first()
+            if not shift:
+                continue
+            exists = db.session.query(DoctorShift).filter(
+                DoctorShift.doctor_id == user.id,
+                DoctorShift.shift_id == shift_id,
+                DoctorShift.work_date == selected_datetime.date()
+            ).first()
+            if not exists:
+                new_ds = DoctorShift(
+                    doctor_id=user.id,
+                    shift_id=shift_id,
+                    work_date=selected_datetime.date()
+                )
+                db.session.add(new_ds)
+                assigned_count += 1
+
+        for shift_id in unassign_ids:
+            shift = db.session.query(Shift).filter(Shift.id == shift_id).first()
+            if not shift:
+                continue
+            ds = db.session.query(DoctorShift).filter(
+                DoctorShift.doctor_id == user.id,
+                DoctorShift.shift_id == shift_id,
+                DoctorShift.work_date == selected_datetime.date()
+            ).first()
+            if not ds:
+                continue
+
+            ticket = db.session.query(Ticket).filter(
+                Ticket.doctor_shift_id == ds.id,
+                Ticket.status.in_([TicketStatus.PENDING, TicketStatus.CONFIRMED])
+            ).first()
+            if ticket:
+                blocked_unassign.append(shift_id)
+                continue
+
+            db.session.delete(ds)
+            unassigned_count += 1
+
+        try:
+            db.session.commit()
+            if assigned_count or unassigned_count:
+                flash(f"Đã cập nhật: đăng ký {assigned_count} ca, hủy {unassigned_count} ca.", 'success')
+            else:
+                flash('Không có thay đổi nào được áp dụng.', 'info')
+
+            if blocked_unassign:
+                flash(
+                    f"Không thể hủy các ca đã có vé đang chờ/xác nhận: {', '.join(map(str, blocked_unassign))}.",
+                    'warning'
+                )
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Lỗi khi cập nhật ca làm việc: {e}', 'danger')
+
+        return redirect(url_for('assign_shift', date=selected_datetime.date().strftime('%Y-%m-%d')))
 
 
 if __name__ == '__main__':
