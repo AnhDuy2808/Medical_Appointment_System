@@ -1,0 +1,20 @@
+<header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+  <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="{{ url_for('doctor_dashboard') }}">
+    <i class="fas fa-clinic-medical me-2"></i>
+    Phòng khám Online
+  </a>
+
+  <div class="navbar-nav">
+    <div class="nav-item text-nowrap d-flex align-items-center">
+      {% if g.user %}
+      <span class="navbar-text me-3">
+                    Chào, Bác sĩ {{ g.user.first_name }}
+                </span>
+      <a class="nav-link px-3" href="{{ url_for('logout') }}">
+        <i class="fas fa-sign-out-alt me-1"></i>
+        Đăng xuất
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</header>
