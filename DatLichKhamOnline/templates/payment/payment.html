@@ -32,13 +32,13 @@
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <strong>Bác Sĩ:</strong>
-              <span>{{ ticket.shifts.doctor.first_name }} {{ ticket.shifts.doctor.last_name }}</span>
+              <span>{{ ticket.doctor_shift.doctor.first_name }} {{ ticket.doctor_shift.doctor.last_name }}</span>
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <strong>Chuyên Khoa:</strong>
               <span>
-                {% if ticket.shifts.doctor.specialties %}
-                  {{ ticket.shifts.doctor.specialties | map(attribute='name') | join(', ') }}
+                {% if ticket.doctor_shift.doctor.specialties %}
+                  {{ ticket.doctor_shift.doctor.specialties | map(attribute='name') | join(', ') }}
                 {% else %}
                   Đang cập nhật
                 {% endif %}
@@ -46,19 +46,19 @@
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <strong>Ngày Khám:</strong>
-              <span>{{ ticket.shifts.work_date.strftime('%d/%m/%Y') }}</span>
+              <span>{{ ticket.doctor_shift.work_date.strftime('%d/%m/%Y') }}</span>
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <strong>Giờ Khám:</strong>
-              <span>{{ ticket.shifts.start_time.strftime('%H:%M') }} - {{ ticket.shifts.end_time.strftime('%H:%M') }}</span>
+              <span>{{ ticket.doctor_shift.shift.start_time.strftime('%H:%M') }} - {{ ticket.doctor_shift.shift.end_time.strftime('%H:%M') }}</span>
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <strong>Trung Tâm Y Tế:</strong>
-              <span>{{ ticket.shifts.medical_center.name }}</span>
+              <span>{{ ticket.doctor_shift.doctor.medical_center.name }}</span>
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <strong>Địa chỉ:</strong>
-              <span>{{ ticket.shifts.medical_center.address }}</span>
+              <span>{{ ticket.doctor_shift.doctor.medical_center.address }}</span>
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <strong>Tên Bệnh Nhân:</strong>
@@ -66,7 +66,7 @@
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <strong>Trạng Thái:</strong>
-              <span class="badge {% if ticket.status == 'pending' %}bg-warning{% elif ticket.status == 'confirmed' %}bg-success{% else %}bg-secondary{% endif %}">{{ ticket.status.capitalize() }}</span>
+              <span class="badge {% if ticket.status.value == 'pending' %}bg-warning{% elif ticket.status.value == 'confirmed' %}bg-success{% else %}bg-secondary{% endif %}">{{ ticket.status.value.capitalize() }}</span>
             </li>
           </ul>
 

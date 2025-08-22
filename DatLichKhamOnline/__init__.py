@@ -5,7 +5,7 @@ import cloudinary.uploader
 
 app = Flask(__name__)
 app.secret_key = "@%%@@^$!@$%%#@%%@PHAD%@$#$&*&"
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:1234@localhost/mas?charset=utf8mb4"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:Hien388@localhost/mas?charset=utf8mb4"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 
 db = SQLAlchemy(app = app)
