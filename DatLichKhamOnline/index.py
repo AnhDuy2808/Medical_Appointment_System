@@ -47,17 +47,22 @@ def search():
 def search_doctor():
     query = request.args.get('q', '').lower()
 
-    # --- CẬP NHẬT CÂU TRUY VẤN Ở ĐÂY ---
+    # --- CẬP NHẬT TRUY VẤN ĐỂ TẢI ĐẦY ĐỦ DỮ LIỆU ---
     doctors_query = db.session.query(User).options(
-        # Tải thông tin từ model Doctor và các thông tin liên quan của nó
+        # Tải đối tượng Doctor liên quan và các thuộc tính của nó
         subqueryload(User.doctor).options(
             joinedload(Doctor.medical_center),  # Tải thông tin bệnh viện (nơi công tác)
             joinedload(Doctor.doctor_departments).joinedload(DoctorDepartment.department)  # Tải chuyên khoa
         )
-    ).join(Doctor).join(DoctorDepartment).join(Department).filter(
-        User.role == UserRole.DOCTOR,
-        (User.first_name.ilike(f'%{query}%') | User.last_name.ilike(f'%{query}%') | Department.name.ilike(f'%{query}%'))
-    ).distinct()
+    ).join(User.doctor).filter(User.role == UserRole.DOCTOR)  # Luôn join vào Doctor
+
+    # Thêm điều kiện tìm kiếm nếu có
+    if query:
+        doctors_query = doctors_query.join(Doctor.doctor_departments).join(Department).filter(
+            (User.first_name.ilike(f'%{query}%')) |
+            (User.last_name.ilike(f'%{query}%')) |
+            (Department.name.ilike(f'%{query}%'))
+        ).distinct()
 
     doctors = doctors_query.all()
 

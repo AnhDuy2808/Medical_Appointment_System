@@ -9,44 +9,46 @@
 
     {% if doctors %}
     <div class="row">
-        {% for doctor in doctors %}
+        {% for doctor_user in doctors %}
         <div class="col-md-4 mb-4">
             <div class="card h-100 shadow-sm border-0">
                 <div class="text-center pt-3">
-                    <img src="{{ doctor.avatar or url_for('static', filename='images/default_avatar.jpg') }}" class="rounded-circle"
-                         alt="{{ doctor.first_name }} {{ doctor.last_name }}"
+                    <img src="{{ doctor_user.avatar or url_for('static', filename='images/default_avatar.jpg') }}" class="rounded-circle"
+                         alt="{{ doctor_user.first_name }} {{ doctor_user.last_name }}"
                          style="width: 150px; height: 150px; object-fit: cover;">
                 </div>
                 <div class="card-body text-center d-flex flex-column">
-                    <h5 class="card-title mt-2">{{ doctor.first_name }} {{ doctor.last_name }}</h5>
+                    <h5 class="card-title mt-2">{{ doctor_user.first_name }} {{ doctor_user.last_name }}</h5>
 
-                    <p class="card-text text-muted small">
-                        <i class="fas fa-stethoscope"></i>
-                        {% if doctor.doctor.doctor_departments %}
-                            {{ doctor.doctor.doctor_departments | map(attribute='department.name') | join(', ') }}
-                        {% else %}
-                            Chưa cập nhật chuyên khoa
+                    {% if doctor_user.doctor %}
+                        <p class="card-text text-muted small">
+                            <i class="fas fa-stethoscope fa-fw me-1"></i>
+                            {% if doctor_user.doctor.doctor_departments %}
+                                {{ doctor_user.doctor.doctor_departments | map(attribute='department.name') | join(', ') }}
+                            {% else %}
+                                Chuyên khoa chưa cập nhật
+                            {% endif %}
+                        </p>
+
+                        <p class="card-text text-muted small">
+                            <i class="fas fa-hospital fa-fw me-1"></i>
+                            {% if doctor_user.doctor.medical_center %}
+                                {{ doctor_user.doctor.medical_center.name }}
+                            {% else %}
+                                Nơi công tác chưa cập nhật
+                            {% endif %}
+                        </p>
+
+                        {% if doctor_user.doctor.description %}
+                        <p class="card-text text-muted small px-2 flex-grow-1">
+                            {{ doctor_user.doctor.description | truncate(100) }}
+                        </p>
                         {% endif %}
-                    </p>
-
-                    <p class="card-text text-muted small">
-                        <i class="fas fa-hospital"></i>
-                        {% if doctor.doctor.medical_center %}
-                            {{ doctor.doctor.medical_center.name }}
-                        {% else %}
-                            Chưa cập nhật nơi công tác
-                        {% endif %}
-                    </p>
-
-                    {% if doctor.doctor and doctor.doctor.description %}
-                    <p class="card-text text-muted small px-2 flex-grow-1">
-                        {{ doctor.doctor.description | truncate(100) }}
-                    </p>
                     {% endif %}
 
                     <div class="mt-auto pt-3">
-                        <a href="{{ url_for('book_appointment', doctor_id=doctor.id) }}" class="btn btn-primary btn-sm">Đặt Lịch</a>
-                        <a href="{{ url_for('doctor_details', doctor_id=doctor.id) }}" class="btn btn-outline-secondary btn-sm">Xem Hồ Sơ</a>
+                        <a href="{{ url_for('book_appointment', doctor_id=doctor_user.id) }}" class="btn btn-primary btn-sm">Đặt Lịch</a>
+                        <a href="{{ url_for('doctor_details', doctor_id=doctor_user.id) }}" class="btn btn-outline-secondary btn-sm">Xem Hồ Sơ</a>
                     </div>
                 </div>
             </div>
@@ -55,7 +57,7 @@
     </div>
     {% else %}
     <div class="alert alert-warning text-center" role="alert">
-        Hiện tại không tìm thấy bác sĩ nào.
+        Không tìm thấy bác sĩ nào phù hợp với tiêu chí tìm kiếm.
     </div>
     {% endif %}
 </div>
