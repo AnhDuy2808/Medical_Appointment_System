@@ -18,7 +18,7 @@
           </a>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
             <li><a class="dropdown-item" href="{{ url_for('profile') }}">Thông tin cá nhân</a></li> {# Thay thế bằng route thông tin người dùng nếu có #}
-            <li><a class="dropdown-item" href="#">Lịch sử đặt khám</a></li> {# Thay thế bằng route lịch sử đặt khám nếu có #}
+            <li><a class="dropdown-item" href="{{ url_for('appointment_history') }}">Lịch sử đặt khám</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="{{ url_for('logout') }}">Đăng Xuất</a></li>
           </ul>
