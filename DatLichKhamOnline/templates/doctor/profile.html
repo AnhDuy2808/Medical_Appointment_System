@@ -41,6 +41,12 @@
           <h4 class="mt-5">Thông tin chuyên môn</h4>
           <hr>
           <div class="mb-3">
+            <label for="start_year" class="form-label">Năm bắt đầu làm việc</label>
+            <input type="number" class="form-control" id="start_year" name="start_year"
+                   placeholder="Ví dụ: 2010" value="{{ doctor.start_year or '' }}">
+            <small class="form-text text-muted">Số năm kinh nghiệm sẽ được tự động tính toán từ đây.</small>
+          </div>
+          <div class="mb-3">
             <label for="description" class="form-label">Mô tả kinh nghiệm</label>
             <textarea class="form-control" id="description" name="description"
                       rows="4">{{ doctor.description or '' }}</textarea>
