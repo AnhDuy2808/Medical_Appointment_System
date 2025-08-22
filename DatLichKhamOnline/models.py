@@ -1,6 +1,6 @@
 import hashlib
 import uuid
-from datetime import datetime, time
+from datetime import datetime, time, timedelta  # Thêm timedelta để tính toán ngày
 from enum import Enum as PyEnum
 from typing import List
 
@@ -228,22 +228,44 @@ if __name__ == '__main__':
         ])
         db.session.commit()
 
-        ds1 = DoctorShift(doctor_id=d1.id, shift_id=shift1.id, work_date=datetime.now().date())
-        ds2 = DoctorShift(doctor_id=d1.id, shift_id=shift2.id, work_date=datetime.now().date())
-        ds3 = DoctorShift(doctor_id=d1.id, shift_id=shift3.id, work_date=datetime.now().date())
-        ds4 = DoctorShift(doctor_id=d2.id, shift_id=shift1.id, work_date=datetime.now().date())
-        ds5 = DoctorShift(doctor_id=d2.id, shift_id=shift2.id, work_date=datetime.now().date())
-        ds6 = DoctorShift(doctor_id=d2.id, shift_id=shift3.id, work_date=datetime.now().date())
-        ds7 = DoctorShift(doctor_id=d3.id, shift_id=shift1.id, work_date=datetime.now().date())
-        ds8 = DoctorShift(doctor_id=d3.id, shift_id=shift2.id, work_date=datetime.now().date())
-        ds9 = DoctorShift(doctor_id=d3.id, shift_id=shift3.id, work_date=datetime.now().date())
-        ds10 = DoctorShift(doctor_id=d4.id, shift_id=shift1.id, work_date=datetime.now().date())
-        ds11 = DoctorShift(doctor_id=d4.id, shift_id=shift2.id, work_date=datetime.now().date())
-        ds12 = DoctorShift(doctor_id=d4.id, shift_id=shift3.id, work_date=datetime.now().date())
+        today = datetime.now().date()
+        ds1 = DoctorShift(doctor_id=d1.id, shift_id=shift1.id, work_date=today)
+        ds2 = DoctorShift(doctor_id=d1.id, shift_id=shift2.id, work_date=today)
+        ds3 = DoctorShift(doctor_id=d1.id, shift_id=shift3.id, work_date=today)
+        ds4 = DoctorShift(doctor_id=d2.id, shift_id=shift1.id, work_date=today)
+        ds5 = DoctorShift(doctor_id=d2.id, shift_id=shift2.id, work_date=today)
+        ds6 = DoctorShift(doctor_id=d2.id, shift_id=shift3.id, work_date=today)
+        ds7 = DoctorShift(doctor_id=d3.id, shift_id=shift1.id, work_date=today)
+        ds8 = DoctorShift(doctor_id=d3.id, shift_id=shift2.id, work_date=today)
+        ds9 = DoctorShift(doctor_id=d3.id, shift_id=shift3.id, work_date=today)
+        ds10 = DoctorShift(doctor_id=d4.id, shift_id=shift1.id, work_date=today)
+        ds11 = DoctorShift(doctor_id=d4.id, shift_id=shift2.id, work_date=today)
+        ds12 = DoctorShift(doctor_id=d4.id, shift_id=shift3.id, work_date=today)
         db.session.add_all([ds1, ds2, ds3, ds4, ds5, ds6, ds7, ds8, ds9, ds10, ds11, ds12])
         db.session.commit()
 
-        ticket = Ticket(client_id=u5.id, doctor_shift_id=ds1.id, status=TicketStatus.PENDING.value, first_name='Hien', last_name='Trung', birth_of_day=datetime.now().date(), gender='Nam')
+        # --- BẮT ĐẦU THÊM MỚI ---
+        print("-> Đang bổ sung thêm lịch khám...")
+        next_day = today + timedelta(days=1)
+
+        # Thêm lịch cho bác sĩ 1 và 2 trong hôm nay
+        ds13 = DoctorShift(doctor_id=d1.id, shift_id=shift4.id, work_date=today)
+        ds14 = DoctorShift(doctor_id=d1.id, shift_id=shift5.id, work_date=today)
+        ds15 = DoctorShift(doctor_id=d2.id, shift_id=shift6.id, work_date=today)
+        ds16 = DoctorShift(doctor_id=d2.id, shift_id=shift7.id, work_date=today)
+
+        # Thêm lịch cho bác sĩ 3 và 4 vào ngày mai
+        ds17 = DoctorShift(doctor_id=d3.id, shift_id=shift1.id, work_date=next_day)
+        ds18 = DoctorShift(doctor_id=d3.id, shift_id=shift2.id, work_date=next_day)
+        ds19 = DoctorShift(doctor_id=d4.id, shift_id=shift1.id, work_date=next_day)
+        ds20 = DoctorShift(doctor_id=d4.id, shift_id=shift2.id, work_date=next_day)
+
+        db.session.add_all([ds13, ds14, ds15, ds16, ds17, ds18, ds19, ds20])
+        db.session.commit()
+        # --- KẾT THÚC THÊM MỚI ---
+
+        ticket = Ticket(client_id=u5.id, doctor_shift_id=ds1.id, status=TicketStatus.PENDING.value, first_name='Hien',
+                        last_name='Trung', birth_of_day=datetime.now().date(), gender='Nam')
         db.session.add(ticket)
         db.session.commit()
 
