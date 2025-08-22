@@ -1,0 +1,75 @@
+{% extends 'doctor/layout/doctor_base.html' %}
+
+{% block title %}Chỉnh sửa lịch làm việc{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+  <h1 class="h2">Chỉnh sửa lịch làm việc</h1>
+</div>
+
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h5>Chỉnh sửa ca làm cho ngày: <strong>{{ work_date.strftime('%d/%m/%Y') }}</strong></h5>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('edit_doctor_shift', work_date=work_date.strftime('%Y-%m-%d')) }}">
+          <div class="form-group">
+            <label class="form-label"><strong>Chọn lại các ca làm việc trong ngày:</strong></label>
+            <p class="text-muted">Bỏ chọn các ca muốn hủy và chọn thêm các ca muốn đăng ký.</p>
+            <div class="border rounded p-3" style="max-height: 500px; overflow-y: auto;">
+              {% for shift in all_shifts %}
+              <div class="form-check">
+                <input class="form-check-input"
+                       type="checkbox"
+                       name="shift_ids"
+                       value="{{ shift.id }}"
+                       id="shift-{{ shift.id }}"
+                       {% if shift.id in registered_shift_ids %}checked{% endif %}>
+                <label class="form-check-label" for="shift-{{ shift.id }}">
+                  {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Lưu thay đổi
+            </button>
+            <a href="{{ url_for('doctor_dashboard') }}" class="btn btn-secondary">Quay lại</a>
+            <button type="button" class="btn btn-danger float-end" data-bs-toggle="modal" data-bs-target="#deleteModal">
+              <i class="fas fa-trash-alt"></i> Xóa lịch ngày này
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Xác nhận xóa lịch làm việc</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Bạn có chắc chắn muốn xóa TOÀN BỘ lịch làm việc trong ngày <strong>{{ work_date.strftime('%d/%m/%Y') }}</strong>
+        không? <br>
+        <strong class="text-danger">Lưu ý:</strong> Hành động này không thể hoàn tác.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <form action="{{ url_for('delete_doctor_shifts_by_date', work_date=work_date.strftime('%Y-%m-%d')) }}"
+              method="POST" style="display: inline;">
+          <button type="submit" class="btn btn-danger">Xác nhận Xóa</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
