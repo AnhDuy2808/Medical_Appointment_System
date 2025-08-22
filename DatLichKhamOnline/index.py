@@ -362,11 +362,18 @@ def medical_center_details(medical_center_id):
 
 @app.route('/doctor_details/<int:doctor_id>')
 def doctor_details(doctor_id):
-    doctor = db.session.get(Doctor, doctor_id)
-    if not doctor:
-        flash('Không tìm thấy bác sĩ này.', 'danger')
-        return redirect(url_for('home'))
-    return render_template('doctor/doctor_details.html', doctor=doctor.user)
+    # --- CẬP NHẬT TRUY VẤN ĐỂ TẢI ĐẦY ĐỦ DỮ LIỆU ---
+    # Truy vấn User và tải trước tất cả các thông tin liên quan cần thiết
+    doctor_user = db.session.query(User).options(
+        subqueryload(User.doctor).options(
+            joinedload(Doctor.medical_center),
+            joinedload(Doctor.doctor_departments).joinedload(DoctorDepartment.department)
+        )
+    ).filter(User.id == doctor_id, User.role == UserRole.DOCTOR).first_or_404()
+
+    # first_or_404() sẽ tự động trả về trang lỗi 404 nếu không tìm thấy bác sĩ
+
+    return render_template('doctor/doctor_details.html', doctor=doctor_user)
 
 
 @app.route('/profile', methods=['GET', 'POST'])
