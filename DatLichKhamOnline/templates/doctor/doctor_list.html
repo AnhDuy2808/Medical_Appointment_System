@@ -3,66 +3,60 @@
 {% block title %}Danh Sách Bác Sĩ{% endblock %}
 
 {% block content %}
-  <div class="container my-5">
+<div class="container my-5">
     <h2 class="text-center mb-4">Các Bác Sĩ Của Chúng Tôi</h2>
     <p class="text-center text-muted mb-5">Tìm kiếm bác sĩ theo chuyên khoa hoặc tên để đặt lịch khám phù hợp.</p>
 
     {% if doctors %}
-      <div class="row">
+    <div class="row">
         {% for doctor in doctors %}
-          <div class="col-md-4 mb-4">
+        <div class="col-md-4 mb-4">
             <div class="card h-100 shadow-sm border-0">
-              <div class="text-center pt-3">
-                {% if doctor.avatar %}
-                  <img src="{{ doctor.avatar }}" class="rounded-circle"
-                       alt="{{ doctor.first_name }} {{ doctor.last_name }}"
-                       style="width: 150px; height: 150px; object-fit: cover;">
-                {% else %}
-                  <img src="/static/images/default_avatar.jpg" class="rounded-circle" alt="Default Avatar"
-                       style="width: 150px; height: 150px; object-fit: cover;">
-                {% endif %}
-              </div>
-              <div class="card-body text-center">
-                <h5 class="card-title mt-2">{{ doctor.first_name }} {{ doctor.last_name }}</h5>
-                <p class="card-text text-muted small">
-                  {% if doctor.doctor.doctor_departments %}
-                    <i class="fas fa-stethoscope mr-1"></i> Chuyên khoa:
-                    {% for dd in doctor.doctor.doctor_departments %}
-                      {{ dd.department.name }}{% if not loop.last %}, {% endif %}
-                    {% endfor %}
-                  {% else %}
-                    <i class="fas fa-stethoscope mr-1"></i> Chưa có chuyên khoa
-                  {% endif %}
-                </p>
-                {# Sử dụng cú pháp comment đúng của Jinja2 #}
-                {#
-          <p class="card-text text-muted small">
-            {% if doctor.work_places %}
-              <i class="fas fa-hospital mr-1"></i> Nơi công tác:
-              {{ doctor.work_places | map(attribute='name') | join(', ') }}
-            {% else %}
-              <i class="fas fa-hospital mr-1"></i> Đang cập nhật nơi công tác
-            {% endif %}
-          </p>
-          #}
-                <div class="mt-3">
-                  <a href="{{ url_for('book_appointment', doctor_id=doctor.id) }}" class="btn btn-primary btn-sm mr-2">Đặt
-                    Lịch</a>
-                  <a href="{{ url_for('doctor_details', doctor_id=doctor.id) }}"
-                     class="btn btn-outline-secondary btn-sm">Xem Hồ Sơ</a>
+                <div class="text-center pt-3">
+                    <img src="{{ doctor.avatar or url_for('static', filename='images/default_avatar.jpg') }}" class="rounded-circle"
+                         alt="{{ doctor.first_name }} {{ doctor.last_name }}"
+                         style="width: 150px; height: 150px; object-fit: cover;">
                 </div>
-              </div>
+                <div class="card-body text-center d-flex flex-column">
+                    <h5 class="card-title mt-2">{{ doctor.first_name }} {{ doctor.last_name }}</h5>
+
+                    <p class="card-text text-muted small">
+                        <i class="fas fa-stethoscope"></i>
+                        {% if doctor.doctor.doctor_departments %}
+                            {{ doctor.doctor.doctor_departments | map(attribute='department.name') | join(', ') }}
+                        {% else %}
+                            Chưa cập nhật chuyên khoa
+                        {% endif %}
+                    </p>
+
+                    <p class="card-text text-muted small">
+                        <i class="fas fa-hospital"></i>
+                        {% if doctor.doctor.medical_center %}
+                            {{ doctor.doctor.medical_center.name }}
+                        {% else %}
+                            Chưa cập nhật nơi công tác
+                        {% endif %}
+                    </p>
+
+                    {% if doctor.doctor and doctor.doctor.description %}
+                    <p class="card-text text-muted small px-2 flex-grow-1">
+                        {{ doctor.doctor.description | truncate(100) }}
+                    </p>
+                    {% endif %}
+
+                    <div class="mt-auto pt-3">
+                        <a href="{{ url_for('book_appointment', doctor_id=doctor.id) }}" class="btn btn-primary btn-sm">Đặt Lịch</a>
+                        <a href="{{ url_for('doctor_details', doctor_id=doctor.id) }}" class="btn btn-outline-secondary btn-sm">Xem Hồ Sơ</a>
+                    </div>
+                </div>
             </div>
-          </div>
+        </div>
         {% endfor %}
-      </div>
-    {% else %}
-      <div class="alert alert-warning text-center" role="alert">
-        Hiện tại không tìm thấy bác sĩ nào.
-      </div>
-    {% endif %}
-    <div class="text-center mt-4">
-      <a href="{{ url_for('home') }}" class="btn btn-info">Quay Lại Trang Chủ</a>
     </div>
-  </div>
+    {% else %}
+    <div class="alert alert-warning text-center" role="alert">
+        Hiện tại không tìm thấy bác sĩ nào.
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

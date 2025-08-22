@@ -4,55 +4,59 @@
 {%block search_bar %} {%endblock%}
 {% block content %}
 <div class="container my-5">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card p-4">
-                <div class="text-center">
-                    {% if doctor.avatar %}
-                    <img src="{{ doctor.avatar }}" class="rounded-circle mb-3" alt="Doctor Avatar" style="width: 150px; height: 150px; object-fit: cover;">
-                    {% else %}
-                    <img src="/static/images/default_avatar.jpg" class="rounded-circle mb-3" alt="Default Avatar" style="width: 150px; height: 150px; object-fit: cover;">
-                    {% endif %}
-                    <h2>{{ doctor.first_name }} {{ doctor.last_name }}</h2>
-                    <p class="text-muted">
-                        <i class="fas fa-stethoscope"></i> Chuyên khoa:
-                       {% if doctor.doctor_departments %}
-                          {% set specialty_names = [] %}
-                          {% for dd in doctor.doctor_departments %}
-                            {% if dd.department %}{% set _ = specialty_names.append(dd.department.name) %}{% endif %}
-                          {% endfor %}
-                          {% if specialty_names %}
-                            {{ specialty_names | join(', ') }}
-                          {% else %}
-                            Chưa có chuyên khoa được gán
-                          {% endif %}
-                        {% else %}
-                          Chưa có chuyên khoa được gán
-                        {% endif %}
-                    </p>
-                    <p class="text-muted">
-                        <i class="fas fa-hospital"></i> Nơi công tác:
-                        {% if doctor.doctor_medical_centers %}
-                            {% set medical_centers = [] %}
-                            {% for dmc in doctor.doctor_medical_centers %}
-                                {% if dmc.medical_center %} {%set _ = medical_centers.append(dmc.medical_center.name) %}{% endif %}
-                            {% endfor %}
-                            {% if medical_centers %}
-                                {{ medical_centers | join(', ') }}
-                            {% else %}
-                                Đang cập nhật
-                            {% endif %}
-                        {% endif %}
-                    </p>
-                    <p>
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                    </p>
-                    <hr>
-                    <a href="{{ url_for('book_appointment', doctor_id=doctor.id) }}" class="btn btn-primary btn-lg mt-3">Đặt lịch khám</a>
-                    <a href="{{ url_for('home') }}" class="btn btn-secondary mt-3">Quay Lại Trang Chủ</a>
-                </div>
-            </div>
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card p-4">
+        <div class="text-center">
+          {% if doctor.avatar %}
+          <img src="{{ doctor.avatar }}" class="rounded-circle mb-3" alt="Doctor Avatar"
+               style="width: 150px; height: 150px; object-fit: cover;">
+          {% else %}
+          <img src="/static/images/default_avatar.jpg" class="rounded-circle mb-3" alt="Default Avatar"
+               style="width: 150px; height: 150px; object-fit: cover;">
+          {% endif %}
+          <h2>{{ doctor.first_name }} {{ doctor.last_name }}</h2>
+          <p class="text-muted">
+            <i class="fas fa-stethoscope"></i> Chuyên khoa:
+            {% if doctor.doctor_departments %}
+            {% set specialty_names = [] %}
+            {% for dd in doctor.doctor_departments %}
+            {% if dd.department %}{% set _ = specialty_names.append(dd.department.name) %}{% endif %}
+            {% endfor %}
+            {% if specialty_names %}
+            {{ specialty_names | join(', ') }}
+            {% else %}
+            Chưa có chuyên khoa được gán
+            {% endif %}
+            {% else %}
+            Chưa có chuyên khoa được gán
+            {% endif %}
+          </p>
+          <p class="text-muted">
+            <i class="fas fa-hospital"></i> Nơi công tác:
+            {% if doctor.doctor_medical_centers %}
+            {% set medical_centers = [] %}
+            {% for dmc in doctor.doctor_medical_centers %}
+            {% if dmc.medical_center %} {%set _ = medical_centers.append(dmc.medical_center.name) %}{% endif %}
+            {% endfor %}
+            {% if medical_centers %}
+            {{ medical_centers | join(', ') }}
+            {% else %}
+            Đang cập nhật
+            {% endif %}
+            {% endif %}
+          </p>
+          <p class="text-muted">
+            <i class="fas fa-briefcase-medical"></i> <strong>Kinh nghiệm:</strong>
+          </p>
+          <p style="white-space: pre-wrap;">{{ doctor.doctor.description or 'Bác sĩ chưa cập nhật thông tin kinh
+            nghiệm.' }}</p>
+          <a href="{{ url_for('book_appointment', doctor_id=doctor.id) }}" class="btn btn-primary mt-3">Đặt lịch
+            khám</a>
+          <a href="{{ url_for('home') }}" class="btn btn-secondary mt-3">Quay Lại Trang Chủ</a>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}
