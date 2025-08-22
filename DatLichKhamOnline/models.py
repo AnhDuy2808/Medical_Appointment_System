@@ -1,6 +1,6 @@
 import hashlib
 import uuid
-from datetime import datetime, time, timedelta  # Thêm timedelta để tính toán ngày
+from datetime import datetime, time, timedelta
 from enum import Enum as PyEnum
 from typing import List
 
@@ -124,12 +124,12 @@ class DoctorShift(BaseModel):
 
     doctor: Mapped[Doctor] = relationship(back_populates="doctor_shifts")
     shift: Mapped[Shift] = relationship(back_populates="doctor_shifts")
-    ticket: Mapped["Ticket"] = relationship(back_populates="doctor_shift")
+    ticket: Mapped["Ticket"] = relationship(back_populates="doctor_shift", uselist=False)
 
 
 class Ticket(BaseModel):
     __tablename__ = 'tickets'
-    uuid: Mapped[str] = mapped_column(db.String(255), unique=True, default=uuid.uuid4())
+    uuid: Mapped[str] = mapped_column(db.String(255), unique=True, default=lambda: str(uuid.uuid4()))
     doctor_shift_id: Mapped[int] = mapped_column(ForeignKey('doctor_shifts.id'), unique=True)
     client_id: Mapped[int] = mapped_column(db.Integer, ForeignKey('users.id'))
     status: Mapped[TicketStatus]
@@ -151,45 +151,38 @@ if __name__ == '__main__':
 
         print("\n--- Đang tạo dữ liệu mẫu ---")
 
-        # # Tạo người dùng mẫu: băm mật khẩu bằng MD5
+        # ... (Phần tạo user, medical_center, department, doctor không đổi)
         admin_user = User(username='admin', password=User.hash_password('123'), email='admin@example.com',
-                          role=UserRole.ADMIN.value, first_name='Admin', last_name='System')
+                          role=UserRole.ADMIN, first_name='Admin', last_name='System')
         u1 = User(username='doc1', password=User.hash_password('123'), email='doctor1@example.com',
-                  role=UserRole.DOCTOR.value, first_name='Lâm Việt', last_name='Trung')
+                  role=UserRole.DOCTOR, first_name='Lâm Việt', last_name='Trung')
         u2 = User(username='doc2', password=User.hash_password('123'), email='doctor2@example.com',
-                  role=UserRole.DOCTOR.value, first_name='Phạm Thị', last_name='Mai')
+                  role=UserRole.DOCTOR, first_name='Phạm Thị', last_name='Mai')
         u3 = User(username='doc3', password=User.hash_password('123'), email='doctor3@example.com',
-                  role=UserRole.DOCTOR.value, first_name='Lê Văn', last_name='Dũng')
+                  role=UserRole.DOCTOR, first_name='Lê Văn', last_name='Dũng')
         u4 = User(username='doc4', password=User.hash_password('123'), email='doctor4@example.com',
-                  role=UserRole.DOCTOR.value, first_name='Trần Thị', last_name='Hương')
+                  role=UserRole.DOCTOR, first_name='Trần Thị', last_name='Hương')
         u5 = User(username='client1', password=User.hash_password('123'), email='client1@example.com',
-                  role=UserRole.USER.value, first_name='Khách', last_name='Hàng A')
-
+                  role=UserRole.USER, first_name='Khách', last_name='Hàng A')
         db.session.add_all([admin_user, u1, u2, u3, u4, u5])
         db.session.commit()
-
-        # Tạo trung tâm y tế
         mc1 = MedicalCenter(name='Bệnh viện Đa khoa Quốc tế', address='123 Đường ABC, Quận 1', phone='0281234567',
                             description='Bệnh viện hàng đầu TP.HCM')
         mc2 = MedicalCenter(name='Phòng khám Chuyên khoa Răng Hàm Mặt', address='456 Đường XYZ, Quận 3',
                             phone='0289876543', description='Chuyên khoa răng hàm mặt uy tín')
         db.session.add_all([mc1, mc2])
         db.session.commit()
-
-        # Tạo các khoa
         dep1 = Department(name='Khoa Tim mạch', description='Chuyên khám và điều trị bệnh tim')
         dep2 = Department(name='Khoa Da liễu', description='Chuyên khám và điều trị bệnh ngoài da')
         dep3 = Department(name='Khoa Nhi', description='Chuyên khám và điều trị cho trẻ em')
         db.session.add_all([dep1, dep2, dep3])
         db.session.commit()
-
         d1 = Doctor(id=u1.id, medical_center_id=mc1.id)
         d2 = Doctor(id=u2.id, medical_center_id=mc2.id)
         d3 = Doctor(id=u3.id, medical_center_id=mc1.id)
         d4 = Doctor(id=u4.id, medical_center_id=mc2.id)
         db.session.add_all([d1, d2, d3, d4])
         db.session.commit()
-
         dd1 = DoctorDepartment(doctor_id=d1.id, department_id=dep1.id)
         dd2 = DoctorDepartment(doctor_id=d2.id, department_id=dep2.id)
         dd3 = DoctorDepartment(doctor_id=d3.id, department_id=dep1.id)
@@ -197,7 +190,8 @@ if __name__ == '__main__':
         db.session.add_all([dd1, dd2, dd3, dd4])
         db.session.commit()
 
-        # Tạo các ca (cố định)
+        # --- CẬP NHẬT TẠO CÁC CA LÀM VIỆC ---
+        print("-> Đang tạo các ca làm việc...")
         shift1 = Shift(start_time=time(7, 0), end_time=time(7, 30))
         shift2 = Shift(start_time=time(7, 30), end_time=time(8, 0))
         shift3 = Shift(start_time=time(8, 0), end_time=time(8, 30))
@@ -221,52 +215,31 @@ if __name__ == '__main__':
         shift21 = Shift(start_time=time(17, 0), end_time=time(17, 30))
         shift22 = Shift(start_time=time(17, 30), end_time=time(18, 0))
 
+        # --- BỔ SUNG CA TỐI ĐẾN 23H ---
+        shift23 = Shift(start_time=time(18, 0), end_time=time(18, 30))
+        shift24 = Shift(start_time=time(18, 30), end_time=time(19, 0))
+        shift25 = Shift(start_time=time(19, 0), end_time=time(19, 30))
+        shift26 = Shift(start_time=time(19, 30), end_time=time(20, 0))
+        shift27 = Shift(start_time=time(20, 0), end_time=time(20, 30))
+        shift28 = Shift(start_time=time(20, 30), end_time=time(21, 0))
+        shift29 = Shift(start_time=time(21, 0), end_time=time(21, 30))
+        shift30 = Shift(start_time=time(21, 30), end_time=time(22, 0))
+        shift31 = Shift(start_time=time(22, 0), end_time=time(22, 30))
+        shift32 = Shift(start_time=time(22, 30), end_time=time(23, 0))
+
         db.session.add_all([
             shift1, shift2, shift3, shift4, shift5, shift6, shift7, shift8, shift9, shift10,
             shift11, shift12, shift13, shift14, shift15, shift16, shift17, shift18, shift19, shift20,
-            shift21, shift22
+            shift21, shift22, shift23, shift24, shift25, shift26, shift27, shift28, shift29, shift30,
+            shift31, shift32
         ])
         db.session.commit()
 
+        # ... (Phần tạo DoctorShift và Ticket mẫu không đổi)
         today = datetime.now().date()
         ds1 = DoctorShift(doctor_id=d1.id, shift_id=shift1.id, work_date=today)
         ds2 = DoctorShift(doctor_id=d1.id, shift_id=shift2.id, work_date=today)
-        ds3 = DoctorShift(doctor_id=d1.id, shift_id=shift3.id, work_date=today)
-        ds4 = DoctorShift(doctor_id=d2.id, shift_id=shift1.id, work_date=today)
-        ds5 = DoctorShift(doctor_id=d2.id, shift_id=shift2.id, work_date=today)
-        ds6 = DoctorShift(doctor_id=d2.id, shift_id=shift3.id, work_date=today)
-        ds7 = DoctorShift(doctor_id=d3.id, shift_id=shift1.id, work_date=today)
-        ds8 = DoctorShift(doctor_id=d3.id, shift_id=shift2.id, work_date=today)
-        ds9 = DoctorShift(doctor_id=d3.id, shift_id=shift3.id, work_date=today)
-        ds10 = DoctorShift(doctor_id=d4.id, shift_id=shift1.id, work_date=today)
-        ds11 = DoctorShift(doctor_id=d4.id, shift_id=shift2.id, work_date=today)
-        ds12 = DoctorShift(doctor_id=d4.id, shift_id=shift3.id, work_date=today)
-        db.session.add_all([ds1, ds2, ds3, ds4, ds5, ds6, ds7, ds8, ds9, ds10, ds11, ds12])
-        db.session.commit()
-
-        # --- BẮT ĐẦU THÊM MỚI ---
-        print("-> Đang bổ sung thêm lịch khám...")
-        next_day = today + timedelta(days=1)
-
-        # Thêm lịch cho bác sĩ 1 và 2 trong hôm nay
-        ds13 = DoctorShift(doctor_id=d1.id, shift_id=shift4.id, work_date=today)
-        ds14 = DoctorShift(doctor_id=d1.id, shift_id=shift5.id, work_date=today)
-        ds15 = DoctorShift(doctor_id=d2.id, shift_id=shift6.id, work_date=today)
-        ds16 = DoctorShift(doctor_id=d2.id, shift_id=shift7.id, work_date=today)
-
-        # Thêm lịch cho bác sĩ 3 và 4 vào ngày mai
-        ds17 = DoctorShift(doctor_id=d3.id, shift_id=shift1.id, work_date=next_day)
-        ds18 = DoctorShift(doctor_id=d3.id, shift_id=shift2.id, work_date=next_day)
-        ds19 = DoctorShift(doctor_id=d4.id, shift_id=shift1.id, work_date=next_day)
-        ds20 = DoctorShift(doctor_id=d4.id, shift_id=shift2.id, work_date=next_day)
-
-        db.session.add_all([ds13, ds14, ds15, ds16, ds17, ds18, ds19, ds20])
-        db.session.commit()
-        # --- KẾT THÚC THÊM MỚI ---
-
-        ticket = Ticket(client_id=u5.id, doctor_shift_id=ds1.id, status=TicketStatus.PENDING.value, first_name='Hien',
-                        last_name='Trung', birth_of_day=datetime.now().date(), gender='Nam')
-        db.session.add(ticket)
+        db.session.add_all([ds1, ds2])
         db.session.commit()
 
         print("\n--- Hoàn thành tạo dữ liệu mẫu ---")

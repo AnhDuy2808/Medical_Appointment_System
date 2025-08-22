@@ -17,30 +17,25 @@
   <div class="row">
     {% for doctor in doctors %}
     <div class="col-md-4 mb-4">
-      <div class="card h-100 shadow-sm border-0">
-        <div class="text-center pt-3">
-          {% if doctor.avatar %}
-          <img src="{{ doctor.avatar }}" class="rounded-circle" alt="{{ doctor.first_name }} {{ doctor.last_name }}" style="width: 150px; height: 150px; object-fit: cover;">
-          {% else %}
-          <img src="/static/images/default_avatar.jpg" class="rounded-circle" alt="Default Avatar" style="width: 150px; height: 150px; object-fit: cover;">
-          {% endif %}
+      <a href="{{ url_for('doctor_details', doctor_id=doctor.id) }}" class="card-link">
+        <div class="card h-100 shadow-sm border-0 card-hover">
+          <div class="text-center pt-3">
+            <img src="{{ doctor.avatar or url_for('static', filename='images/default_avatar.jpg') }}" class="rounded-circle" alt="{{ doctor.first_name }} {{ doctor.last_name }}" style="width: 150px; height: 150px; object-fit: cover;">
+          </div>
+          <div class="card-body text-center">
+            <h5 class="card-title mt-2">{{ doctor.first_name }} {{ doctor.last_name }}</h5>
+            <p class="card-text text-muted small">
+              {% if doctor.doctor.doctor_departments %}
+                <i class="fas fa-stethoscope mr-1"></i> Khoa:
+                {{ doctor.doctor.doctor_departments | map(attribute='department.name') | join(', ') }}
+              {% else %}
+                <i class="fas fa-stethoscope mr-1"></i> Chưa có khoa được gán
+              {% endif %}
+            </p>
+            <span class="btn btn-primary btn-sm mt-2">Xem chi tiết</span>
+          </div>
         </div>
-        <div class="card-body text-center">
-          <h5 class="card-title mt-2">{{ doctor.first_name }} {{ doctor.last_name }}</h5>
-          <p class="card-text text-muted small">
-            {% if doctor.doctor.doctor_departments %}
-              <i class="fas fa-stethoscope mr-1"></i> Khoa:
-              {% for dd in doctor.doctor.doctor_departments %}
-                {{ dd.department.name }}{% if not loop.last %}, {% endif %}
-              {% endfor %}
-            {% else %}
-              <i class="fas fa-stethoscope mr-1"></i> Chưa có khoa được gán
-            {% endif %}
-          </p>
-          <a href="{{ url_for('book_appointment', doctor_id=doctor.id) }}" class="btn btn-primary btn-sm mt-2">Đặt Lịch</a>
-          <a href="{{ url_for('doctor_details', doctor_id=doctor.id) }}" class="btn btn-outline-secondary btn-sm mt-2">Xem Hồ Sơ</a>
-        </div>
-      </div>
+      </a>
     </div>
     {% endfor %}
   </div>
@@ -58,18 +53,15 @@
   <div class="row">
     {% for medical_center in medical_centers %}
     <div class="col-md-4 mb-4">
-      <div class="card h-100 shadow-sm border-0">
-        {% if medical_center.cover_img %}
-        <img src="{{ medical_center.cover_img }}" class="card-img-top" alt="{{ medical_center.name }}" style="height: 200px; object-fit: cover;">
-        {% else %}
-        <img src="/static/images/default_hospital.jpg" class="card-img-top" alt="Default Hospital" style="height: 200px; object-fit: cover;">
-        {% endif %}
-        <div class="card-body">
-          <h5 class="card-title"><i class="fas fa-hospital-alt mr-2"></i>{{ medical_center.name }}</h5>
-          <p class="card-text text-muted">{{ medical_center.description|truncate(80) }}</p>
-          <a href="{{ url_for('medical_center_details', medical_center_id=medical_center.id) }}" class="btn btn-primary">Xem Chi Tiết</a>
+      <a href="{{ url_for('medical_center_details', medical_center_id=medical_center.id) }}" class="card-link">
+        <div class="card h-100 shadow-sm border-0 card-hover">
+          <img src="{{ medical_center.image or url_for('static', filename='images/default_hospital.jpg') }}" class="card-img-top" alt="{{ medical_center.name }}" style="height: 200px; object-fit: cover;">
+          <div class="card-body">
+            <h5 class="card-title"><i class="fas fa-hospital-alt mr-2"></i>{{ medical_center.name }}</h5>
+            <p class="card-text text-muted">{{ medical_center.description|truncate(80) }}</p>
+          </div>
         </div>
-      </div>
+      </a>
     </div>
     {% endfor %}
   </div>
@@ -79,4 +71,18 @@
   </div>
   {% endif %}
 </div>
+
+<style>
+  .card-link {
+    text-decoration: none;
+    color: inherit; /* Kế thừa màu chữ mặc định */
+  }
+  .card-hover {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  .card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  }
+</style>
 {% endblock %}
