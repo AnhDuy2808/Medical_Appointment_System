@@ -1,0 +1,75 @@
+{% extends 'doctor/layout/doctor_base.html' %}
+
+{% block title %}Lịch hẹn của Bệnh nhân{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+  <h1 class="h2">Danh sách Lịch hẹn với Bệnh nhân</h1>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header">
+    <form method="GET" action="{{ url_for('doctor_appointments') }}" class="row g-3 align-items-center">
+      <div class="col-auto">
+        <label for="filter_date" class="col-form-label"><strong>Lọc theo ngày khám:</strong></label>
+      </div>
+      <div class="col-auto">
+        <input type="date" class="form-control" id="filter_date" name="filter_date" value="{{ filter_date or '' }}">
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Lọc</button>
+        <a href="{{ url_for('doctor_appointments') }}" class="btn btn-secondary"><i class="fas fa-times"></i> Bỏ lọc</a>
+      </div>
+    </form>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead class="table-light">
+        <tr>
+          <th scope="col">Ngày Khám</th>
+          <th scope="col">Giờ Khám</th>
+          <th scope="col">Họ Tên Bệnh Nhân</th>
+          <th scope="col">Giới Tính</th>
+          <th scope="col">Ngày Sinh</th>
+          <th scope="col">Trạng Thái</th>
+          <th scope="col">Mã Vé</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% if appointments %}
+        {% for ticket in appointments %}
+        <tr>
+          <td><strong>{{ ticket.doctor_shift.work_date.strftime('%d/%m/%Y') }}</strong></td>
+          <td>{{ ticket.doctor_shift.shift.start_time.strftime('%H:%M') }}</td>
+          <td>{{ ticket.first_name }} {{ ticket.last_name }}</td>
+          <td>{{ ticket.gender }}</td>
+          <td>{{ ticket.birth_of_day.strftime('%d/%m/%Y') }}</td>
+          <td>
+            {% set status_map = {
+            'PENDING': {'class': 'bg-warning text-dark', 'text': 'Chờ xác nhận'},
+            'CONFIRMED': {'class': 'bg-success', 'text': 'Đã xác nhận'},
+            'CANCELLED': {'class': 'bg-danger', 'text': 'Đã hủy'},
+            'COMPLETED': {'class': 'bg-info text-dark', 'text': 'Đã hoàn thành'}
+            } %}
+            {% set status_info = status_map.get(ticket.status.name, {'class': 'bg-secondary', 'text': 'Không xác định'})
+            %}
+            <span class="badge {{ status_info.class }}">{{ status_info.text }}</span>
+          </td>
+          <td><small>{{ ticket.uuid }}</small></td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-4">
+            <i class="fas fa-box-open fa-2x mb-2"></i>
+            <p>Không tìm thấy lịch hẹn nào.</p>
+          </td>
+        </tr>
+        {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
