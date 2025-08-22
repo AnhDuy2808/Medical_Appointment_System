@@ -23,10 +23,25 @@ def load_logged_in_user():
         g.user = db.session.get(User, user_id)
 
 
+@app.context_processor
+def inject_current_year():
+    """Làm cho biến 'current_year' có sẵn trong tất cả các template."""
+    return {'current_year': datetime.now().year}
+
+
 @app.route("/")
 def home():
-    doctors = db.session.query(User).filter(User.role == "doctor").all()
-    medical_centers = db.session.query(MedicalCenter).all()
+    # Cập nhật truy vấn để tải đầy đủ thông tin liên quan của bác sĩ
+    doctors = db.session.query(User).options(
+        subqueryload(User.doctor).options(
+            joinedload(Doctor.medical_center),
+            joinedload(Doctor.doctor_departments).joinedload(DoctorDepartment.department)
+        )
+    ).filter(User.role == UserRole.DOCTOR).limit(6).all()  # Lấy 6 bác sĩ nổi bật
+
+    # Lấy 6 trung tâm y tế nổi bật
+    medical_centers = db.session.query(MedicalCenter).limit(6).all()
+
     return render_template('index.html', doctors=doctors, medical_centers=medical_centers)
 
 
@@ -663,6 +678,7 @@ def doctor_profile():
         if doctor_info:
             doctor_info.description = request.form.get('description')
             doctor_info.medical_center_id = request.form.get('medical_center_id')
+            doctor_info.start_year = request.form.get('start_year', type=int)
 
         try:
             db.session.commit()
