@@ -24,6 +24,14 @@
               <h4 class="text-primary border-bottom pb-2 mb-3">Thông tin chi tiết</h4>
 
               {% if doctor.doctor %}
+              {% if doctor.doctor.start_year %}
+              <p>
+                <i class="fas fa-medal fa-fw text-muted me-2"></i>
+                <strong>Kinh nghiệm:</strong>
+                <span class="fw-bold text-success">{{ current_year - doctor.doctor.start_year }} năm</span>
+              </p>
+              {% endif %}
+
               <p>
                 <i class="fas fa-stethoscope fa-fw text-muted me-2"></i>
                 <strong>Chuyên khoa:</strong>
@@ -45,7 +53,7 @@
               </p>
 
               {% if doctor.doctor.description %}
-              <h4 class="text-primary border-bottom pb-2 mt-4 mb-3">Kinh nghiệm</h4>
+              <h4 class="text-primary border-bottom pb-2 mt-4 mb-3">Thông tin và Kinh nghiệm</h4>
               <p style="white-space: pre-wrap;">{{ doctor.doctor.description }}</p>
               {% endif %}
 
