@@ -1,132 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Đặt Lịch Khám Online{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha384-..." crossorigin="anonymous">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> {# Nếu bạn có file CSS riêng #}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Đặt Lịch Khám Online{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+        integrity="sha384-..." crossorigin="anonymous">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {# Nếu bạn có file CSS riêng #}
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 </head>
 <body>
-    {# Include navbar từ header.html #}
-    {% include 'layout/header.html' %}
+{# Include navbar từ header.html #}
+{% include 'layout/header.html' %}
 
-    {# Đặt block search_bar Ở ĐÂY, sau khi include header. Các trang con sẽ override block này để ẩn search bar #}
-    {% block search_bar %}
-    <div class="container search-bar py-3" style="background-color: #f8f9fa;">
-      <div class="input-group">
-        <input type="text" class="form-control" placeholder="Tìm kiếm bác sĩ, bệnh viện, chuyên khoa..." id="searchInput">
-        <button class="btn btn-primary" type="button" id="searchButton"><i class="fas fa-search"></i></button>
-      </div>
-      <div id="suggestions" class="list-group position-absolute w-100 mt-1 shadow-sm" style="z-index: 1000; display: none;"></div>
-    </div>
+{% block search_bar %}
+<div class="search-wrapper py-3 sticky-top">
+  <div class="container">
+    <div id="react-search-bar-root"></div>
+  </div>
+</div>
 
-    <script>
-      // Đảm bảo DOM đã tải xong trước khi truy cập các phần tử
-      document.addEventListener('DOMContentLoaded', function() {
-          const searchInput = document.getElementById('searchInput');
-          const searchButton = document.getElementById('searchButton');
-          const suggestions = document.getElementById('suggestions');
+<style>
+  .search-wrapper {
+    background-color: #f0f5ff;
+    top: 58px;
+    z-index: 1020; /* SỬA LẠI Z-INDEX THÀNH 1020 (THẤP HƠN HEADER) */
+  }
+  .search-bar-container {
+    position: relative;
+    background-color: #fff;
+    border-radius: 50px;
+    padding: 4px;
+    transition: box-shadow 0.3s ease;
+    border: 1px solid #dee2e6;
+  }
+  .search-bar-container:focus-within {
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.25) !important;
+    border-color: #86b7fe;
+  }
+  .search-bar-container .form-control {
+    box-shadow: none !important;
+    background-color: transparent;
+    padding-left: 0.5rem;
+  }
+  .search-bar-container .btn-primary {
+    border-radius: 50px !important;
+    padding: 0.375rem 1.25rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+</style>
 
-          // Kiểm tra xem các phần tử có tồn tại không trước khi thêm event listener
-          if (searchInput && searchButton && suggestions) {
-              // Hàm thực hiện tìm kiếm
-              function performSearch() {
-                let query = searchInput.value.trim();
-                if (query) {
-                  window.location.href = "{{ url_for('search') }}?q=" + encodeURIComponent(query);
-                }
-              }
+<script type="text/babel" src="{{ url_for('static', filename='js/SearchBar.js') }}"></script>
+<script type="text/babel">
+  const searchUrl = "{{ url_for('search') }}";
+  const suggestionsUrl = "{{ url_for('api_suggestions') }}"; // Cần tạo route này nếu chưa có
 
-              // Gán sự kiện nhấn Enter
-              searchInput.addEventListener('keypress', function(event) {
-                if (event.key === 'Enter') {
-                  event.preventDefault(); // Ngăn chặn hành vi mặc định của Enter
-                  performSearch();
-                }
-              });
+  ReactDOM.render(
+    <SearchBar searchUrl={searchUrl} suggestionsUrl={suggestionsUrl} />,
+    document.getElementById('react-search-bar-root')
+  );
+</script>
+{% endblock %}
 
-              // Gán sự kiện cho nút tìm kiếm
-              searchButton.addEventListener('click', performSearch);
+<main>
+  {% block content %}{% endblock %}
+</main>
 
-              // Xử lý gợi ý tìm kiếm khi người dùng nhập liệu
-              searchInput.addEventListener('input', async function() {
-                const query = this.value.trim();
-                if (query.length > 1) { // Chỉ gửi yêu cầu nếu có ít nhất 2 ký tự
-                  try {
-                    const response = await fetch(`/api/suggestions?q=${encodeURIComponent(query)}`); // Mã hóa query
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const data = await response.json();
-
-                    suggestions.innerHTML = ''; // Xóa gợi ý cũ
-                    if (data.length > 0) {
-                      suggestions.style.display = 'block';
-                      data.forEach(suggestion => {
-                        const div = document.createElement('a');
-                        div.className = 'list-group-item list-group-item-action';
-                        div.textContent = suggestion;
-                        // Điều chỉnh href để chuyển hướng đến trang tìm kiếm với query tương ứng
-                        const search_term = suggestion.includes(' - ') ? suggestion.split(' - ')[0].trim() : suggestion.trim();
-                        div.href = "{{ url_for('search') }}?q=" + encodeURIComponent(search_term);
-                        suggestions.appendChild(div);
-                      });
-                    } else {
-                      suggestions.style.display = 'none'; // Ẩn nếu không có gợi ý
-                    }
-                  } catch (error) {
-                      console.error("Error fetching suggestions:", error);
-                      suggestions.style.display = 'none'; // Ẩn gợi ý nếu có lỗi
-                  }
-                } else {
-                  suggestions.style.display = 'none'; // Ẩn nếu query quá ngắn
-                }
-              });
-
-              // Ẩn gợi ý khi mất focus khỏi input sau một thời gian ngắn
-              searchInput.addEventListener('blur', function() {
-                setTimeout(() => suggestions.style.display = 'none', 200);
-              });
-
-              // Hiện gợi ý lại khi focus vào input nếu có đủ ký tự
-              searchInput.addEventListener('focus', function() {
-                if (this.value.trim().length > 1) {
-                  suggestions.style.display = 'block';
-                }
-              });
-          }
-      });
-    </script>
-
-    <style>
-      /* CSS của search bar */
-      .search-bar { position: relative; }
-      .input-group .form-control { border-radius: 0; box-shadow: none; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; }
-      .input-group .form-control:focus { border-color: #007bff; box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); }
-      .btn-primary { border-top-right-radius: .25rem; border-bottom-right-radius: .25rem; }
-      #suggestions {
-        border-top: none;
-        max-height: 300px;
-        overflow-y: auto;
-        background-color: #fff;
-        border: 1px solid #dee2e6;
-        border-top: 0;
-      }
-      .dropdown-menu {
-        border-radius: .25rem;
-        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
-      }
-    </style>
-    {% endblock %}
-
-    <main>
-        {% block content %}{% endblock %}
-    </main>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    {# Nếu bạn có các script riêng cho từng trang, có thể đặt trong block này #}
-    {% block scripts %}{% endblock %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+{# Nếu bạn có các script riêng cho từng trang, có thể đặt trong block này #}
+{% block scripts %}{% endblock %}
 </body>
 </html>

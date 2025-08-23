@@ -1,40 +1,73 @@
-<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #007bff; transition: background-color 0.3s ease;">
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top" style="z-index: 1030;">
   <div class="container">
-    <a class="navbar-brand" href="{{ url_for('home') }}" style="transition: color 0.3s ease;">Đặt Lịch Khám</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <a class="navbar-brand fw-bold text-primary" href="{{ url_for('home') }}">
+      <i class="fas fa-clinic-medical me-2"></i>Đặt Lịch Khám
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('home') }}" style="transition: color 0.3s ease;">Trang Chủ</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('search_doctor') }}" style="transition: color 0.3s ease;">Tìm Bác Sĩ</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('search_medical_center') }}" style="transition: color 0.3s ease;">Tìm Trung Tâm Y Tế</a></li>
+      <ul class="navbar-nav ms-auto align-items-lg-center">
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Trang
+            Chủ</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'search_doctor' %}active{% endif %}"
+             href="{{ url_for('search_doctor') }}">Tìm Bác Sĩ</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'search_medical_center' %}active{% endif %}"
+             href="{{ url_for('search_medical_center') }}">Cơ sở Y tế</a>
+        </li>
 
-        {# LOGIC HIỂN THỊ TÀI KHOẢN NGƯỜI DÙNG #}
-        {% if g.user %}
+        {# SỬ DỤNG current_user THAY VÌ g.user #}
+        {% if current_user.is_authenticated %}
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Chào, {{ g.user.first_name }} {{ g.user.last_name }}!
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
+             aria-expanded="false">
+            <img src="{{ current_user.avatar or url_for('static', filename='images/default_avatar.jpg') }}" alt="Avatar"
+                 class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
+            {{ current_user.first_name }}
           </a>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-            <li><a class="dropdown-item" href="{{ url_for('profile') }}">Thông tin cá nhân</a></li> {# Thay thế bằng route thông tin người dùng nếu có #}
-            <li><a class="dropdown-item" href="{{ url_for('appointment_history') }}">Lịch sử đặt khám</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Đăng Xuất</a></li>
+            {% if current_user.role == 'ADMIN' %}
+            <li><a class="dropdown-item" href="/admin"><i class="fas fa-cogs fa-fw me-2"></i>Trang Quản Trị</a></li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+            {% endif %}
+            <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fas fa-user-edit fa-fw me-2"></i>Thông
+              tin cá nhân</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('appointment_history') }}"><i
+              class="fas fa-history fa-fw me-2"></i>Lịch sử đặt khám</a></li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+            <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i
+              class="fas fa-sign-out-alt fa-fw me-2"></i>Đăng Xuất</a></li>
           </ul>
         </li>
         {% else %}
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('user_login') }}" style="transition: color 0.3s ease;">Đăng Nhập</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}" style="transition: color 0.3s ease;">Đăng Ký</a></li>
+        <li class="nav-item mx-lg-2">
+          <a class="nav-link" href="{{ url_for('user_login') }}">Đăng Nhập</a>
+        </li>
+        <li class="nav-item">
+          <a class="btn btn-primary btn-sm px-3 py-2" href="{{ url_for('register') }}">Đăng Ký</a>
+        </li>
         {% endif %}
-        {# KẾT THÚC LOGIC HIỂN THỊ TÀI KHOẢN #}
       </ul>
     </div>
   </div>
 </nav>
 
 <style>
-  /* CSS chỉ cho navbar, không có search bar */
-  .navbar-toggler { border-color: rgba(255,255,255,.1); }
-  .navbar-toggler-icon { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.55%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e"); }
+  .navbar { transition: background-color 0.3s ease; }
+  .navbar-brand { font-size: 1.4rem; }
+  .nav-link { font-weight: 500; color: #6c757d; transition: color 0.2s ease; padding: 0.8rem 1rem; }
+  .nav-link:hover, .nav-link.active { color: #007bff; }
+  .navbar .btn-primary { transition: all 0.2s ease; }
+  .dropdown-item { display: flex; align-items: center; }
+  .dropdown-item i { color: #6c757d; }
 </style>
