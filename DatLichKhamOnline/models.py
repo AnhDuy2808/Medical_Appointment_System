@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, time, timedelta, date
 from enum import Enum as PyEnum
 from typing import List
-
+from flask_login import UserMixin
 from sqlalchemy import String, Date, Time, ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
@@ -34,7 +34,7 @@ class TicketStatus(PyEnum):
     COMPLETED = "completed"
 
 
-class User(BaseModel):
+class User(BaseModel, UserMixin):
     __tablename__ = 'users'
     email: Mapped[str] = mapped_column(String(120), unique=True)
     password: Mapped[str] = mapped_column(String(128))
