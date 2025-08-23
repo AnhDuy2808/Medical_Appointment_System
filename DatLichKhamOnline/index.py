@@ -8,19 +8,21 @@ from sqlalchemy.orm import joinedload, subqueryload
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.sqltypes import Date
 from flask import jsonify
-from DatLichKhamOnline import app, db
+from DatLichKhamOnline import app, db, login
 from models import User, MedicalCenter, DoctorDepartment, Department, Ticket, UserRole, Doctor, DoctorShift, \
     Shift, TicketStatus  # Đảm bảo đã import 'Shift'
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from DatLichKhamOnline.admin import admin
 
 
 # Middleware để tải thông tin người dùng trước mỗi request
-@app.before_request
-def load_logged_in_user():
-    user_id = session.get('user_id')
-    if user_id is None:
-        g.user = None
-    else:
-        g.user = db.session.get(User, user_id)
+# @app.before_request
+# def load_logged_in_user():
+#     user_id = session.get('user_id')
+#     if user_id is None:
+#         g.user = None
+#     else:
+#         g.user = db.session.get(User, user_id)
 
 
 @app.context_processor
@@ -31,18 +33,8 @@ def inject_current_year():
 
 @app.route("/")
 def home():
-    # Cập nhật truy vấn để tải đầy đủ thông tin liên quan của bác sĩ
-    doctors = db.session.query(User).options(
-        subqueryload(User.doctor).options(
-            joinedload(Doctor.medical_center),
-            joinedload(Doctor.doctor_departments).joinedload(DoctorDepartment.department)
-        )
-    ).filter(User.role == UserRole.DOCTOR).limit(6).all()  # Lấy 6 bác sĩ nổi bật
-
-    # Lấy 6 trung tâm y tế nổi bật
-    medical_centers = db.session.query(MedicalCenter).limit(6).all()
-
-    return render_template('index.html', doctors=doctors, medical_centers=medical_centers)
+    # Dữ liệu sẽ được tải bởi React, không cần truy vấn ở đây nữa
+    return render_template('index.html')
 
 
 @app.route("/search")
@@ -56,6 +48,79 @@ def search():
         MedicalCenter.name.ilike(f'%{query}%') | MedicalCenter.description.ilike(f'%{query}%')
     ).all()
     return render_template('index.html', doctors=doctors, medical_centers=medical_centers)
+
+
+@app.route('/api/suggestions')
+def api_suggestions():
+    query = request.args.get('q', '').lower()
+    if not query:
+        return jsonify([])
+
+    # Tìm bác sĩ
+    doctors = db.session.query(User).filter(
+        User.role == UserRole.DOCTOR,
+        (User.first_name + " " + User.last_name).ilike(f'%{query}%')
+    ).limit(5).all()
+
+    # Tìm bệnh viện
+    centers = db.session.query(MedicalCenter).filter(
+        MedicalCenter.name.ilike(f'%{query}%')
+    ).limit(3).all()
+
+    # Tìm chuyên khoa
+    departments = db.session.query(Department).filter(
+        Department.name.ilike(f'%{query}%')
+    ).limit(3).all()
+
+    suggestions = []
+    for d in doctors:
+        suggestions.append(f"{d.first_name} {d.last_name} - Bác sĩ")
+    for c in centers:
+        suggestions.append(f"{c.name} - Bệnh viện")
+    for d in departments:
+        suggestions.append(f"{d.name} - Chuyên khoa")
+
+    return jsonify(suggestions)
+
+
+@app.route('/api/featured-doctors')
+def api_featured_doctors():
+    current_year = datetime.now().year
+    doctors = db.session.query(User).options(
+        subqueryload(User.doctor).options(
+            joinedload(Doctor.medical_center),
+            joinedload(Doctor.doctor_departments).joinedload(DoctorDepartment.department)
+        )
+    ).filter(User.role == UserRole.DOCTOR).limit(6).all()
+
+    doctor_list = []
+    for user in doctors:
+        if user.doctor:
+            doctor_list.append({
+                'id': user.id,
+                'full_name': f"{user.first_name} {user.last_name}",
+                'avatar': user.avatar,
+                'specialty': ', '.join([dd.department.name for dd in user.doctor.doctor_departments]),
+                'medical_center': user.doctor.medical_center.name if user.doctor.medical_center else None,
+                'experience_years': current_year - user.doctor.start_year if user.doctor.start_year else None
+            })
+
+    return jsonify(doctor_list)
+
+
+@app.route('/api/medical-centers')
+def api_medical_centers():
+    centers = db.session.query(MedicalCenter).limit(6).all()
+
+    center_list = [{
+        'id': center.id,
+        'name': center.name,
+        'image': center.image,
+        'description': center.description[:100] + '...' if center.description and len(
+            center.description) > 100 else center.description
+    } for center in centers]
+
+    return jsonify(center_list)
 
 
 @app.route("/search_doctor")
@@ -95,8 +160,14 @@ def search_medical_center():
 
 @app.route("/user_login", methods=["GET", "POST"])
 def user_login():
-    if g.user:
+    if current_user.is_authenticated:
         flash("Bạn đã đăng nhập rồi.", "info")
+        # Nếu người dùng đã đăng nhập mà cố vào trang login,
+        # chuyển hướng họ về đúng trang của mình
+        if current_user.role == UserRole.ADMIN:
+            return redirect('/admin')
+        if current_user.role == UserRole.DOCTOR:
+            return redirect(url_for('doctor_dashboard'))
         return redirect(url_for('home'))
 
     if request.method == "POST":
@@ -105,18 +176,19 @@ def user_login():
         user = db.session.query(User).filter(User.username == username).first()
 
         if user and user.check_password(password):
-            session['user_id'] = user.id
+            login_user(user=user)  # Hàm từ Flask-Login
             flash(f"Đăng nhập thành công! Chào mừng {user.first_name} {user.last_name}.", "success")
 
-            # --- PHÂN LUỒNG THEO VAI TRÒ ---
+            # --- KIỂM TRA VAI TRÒ VÀ CHUYỂN HƯỚNG TẠI ĐÂY ---
+            if user.role == UserRole.ADMIN:
+                # Nếu là admin, vào thẳng trang quản trị
+                return redirect('/admin')
+
             if user.role == UserRole.DOCTOR:
                 return redirect(url_for('doctor_dashboard'))
-            # Mở rộng cho các vai trò khác nếu cần, ví dụ:
-            # elif user.role == UserRole.ADMIN:
-            #     return redirect(url_for('admin_dashboard'))
-            else:
-                return redirect(url_for("home"))
-            # --- KẾT THÚC PHÂN LUỒNG ---
+
+            # Mặc định, người dùng thường sẽ về trang chủ
+            return redirect(url_for("home"))
         else:
             flash("Tên đăng nhập hoặc mật khẩu không đúng.", "danger")
 
@@ -192,7 +264,7 @@ def doctor_dashboard():
 
 @app.route("/logout")
 def logout():
-    session.pop('user_id', None)
+    logout_user()
     flash("Đã đăng xuất.", "success")
     return redirect(url_for("home"))
 
@@ -392,6 +464,7 @@ def doctor_details(doctor_id):
 
 
 @app.route('/profile', methods=['GET', 'POST'])
+@login_required
 def profile():
     if not g.user:
         flash('Vui lòng đăng nhập để xem thông tin cá nhân.', 'warning')
@@ -693,6 +766,20 @@ def doctor_profile():
     medical_centers = db.session.query(MedicalCenter).all()
 
     return render_template('doctor/profile.html', user=g.user, doctor=doctor_info, medical_centers=medical_centers)
+
+
+@login.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
+
+
+# --- THAY THẾ HÀM @app.before_request CŨ BẰNG HÀM NÀY ---
+@app.before_request
+def before_request():
+    # Gán current_user vào g.user để các template cũ vẫn hoạt động
+    g.user = current_user
+    # Thêm hàm now() vào context của template
+    app.jinja_env.globals['now'] = datetime.now
 
 
 if __name__ == '__main__':
