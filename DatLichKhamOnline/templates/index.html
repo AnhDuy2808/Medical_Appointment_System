@@ -13,89 +13,43 @@
     <h2>Bác Sĩ Nổi Bật</h2>
     <a href="{{ url_for('search_doctor') }}" class="btn btn-outline-primary">Xem tất cả</a>
   </div>
-  {% if doctors %}
-  <div class="row">
-    {% for doctor_user in doctors %}
-    <div class="col-md-4 mb-4">
-      <a href="{{ url_for('doctor_details', doctor_id=doctor_user.id) }}" class="card-link">
-        <div class="card h-100 shadow-sm border-0 card-hover">
-          <div class="text-center pt-3">
-            <img src="{{ doctor_user.avatar or url_for('static', filename='images/default_avatar.jpg') }}" class="rounded-circle" alt="{{ doctor_user.first_name }} {{ doctor_user.last_name }}" style="width: 150px; height: 150px; object-fit: cover;">
-          </div>
-          <div class="card-body text-center">
-            <h5 class="card-title mt-2">{{ doctor_user.first_name }} {{ doctor_user.last_name }}</h5>
-
-            {% if doctor_user.doctor %}
-              <p class="card-text text-muted small">
-                <i class="fas fa-stethoscope fa-fw me-1"></i>
-                {% if doctor_user.doctor.doctor_departments %}
-                  {{ doctor_user.doctor.doctor_departments | map(attribute='department.name') | join(', ') }}
-                {% else %}
-                  Chuyên khoa chưa cập nhật
-                {% endif %}
-              </p>
-
-              <p class="card-text text-muted small">
-                  <i class="fas fa-hospital fa-fw me-1"></i>
-                  {% if doctor_user.doctor.medical_center %}
-                      {{ doctor_user.doctor.medical_center.name }}
-                  {% else %}
-                      Nơi công tác chưa cập nhật
-                  {% endif %}
-              </p>
-            {% endif %}
-
-            <span class="btn btn-primary btn-sm mt-2">Xem chi tiết</span>
-          </div>
-        </div>
-      </a>
-    </div>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="alert alert-warning">
-    Hiện tại không có bác sĩ nào được hiển thị.
-  </div>
-  {% endif %}
+  <div id="react-doctor-list-root"></div>
 
   <div class="d-flex justify-content-between align-items-center mb-3 mt-5">
     <h2>Trung Tâm Y Tế</h2>
     <a href="{{ url_for('search_medical_center') }}" class="btn btn-outline-primary">Xem tất cả</a>
   </div>
-  {% if medical_centers %}
-  <div class="row">
-    {% for medical_center in medical_centers %}
-    <div class="col-md-4 mb-4">
-      <a href="{{ url_for('medical_center_details', medical_center_id=medical_center.id) }}" class="card-link">
-        <div class="card h-100 shadow-sm border-0 card-hover">
-          <img src="{{ medical_center.image or url_for('static', filename='images/default_hospital.jpg') }}" class="card-img-top" alt="{{ medical_center.name }}" style="height: 200px; object-fit: cover;">
-          <div class="card-body">
-            <h5 class="card-title"><i class="fas fa-hospital-alt mr-2"></i>{{ medical_center.name }}</h5>
-            <p class="card-text text-muted">{{ medical_center.description|truncate(80) }}</p>
-          </div>
-        </div>
-      </a>
-    </div>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="alert alert-warning">
-    Hiện tại không có trung tâm y tế nào được hiển thị.
-  </div>
-  {% endif %}
+  <div id="react-medical-center-list-root"></div>
 </div>
 
 <style>
-  .card-link {
-    text-decoration: none;
-    color: inherit;
-  }
-  .card-hover {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  }
-  .card-hover:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-  }
+  .card-link { text-decoration: none; color: inherit; }
+  .card-hover { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+  .card-hover:hover { transform: translateY(-5px); box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; }
 </style>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/babel" src="{{ url_for('static', filename='js/DoctorList.js') }}"></script>
+<script type="text/babel" src="{{ url_for('static', filename='js/MedicalCenterList.js') }}"></script>
+
+<script type="text/babel">
+  // Render danh sách Bác sĩ
+  ReactDOM.render(
+    <DoctorList
+        apiUrl="{{ url_for('api_featured_doctors') }}"
+        detailsUrl="/doctor_details"
+    />,
+    document.getElementById('react-doctor-list-root')
+  );
+
+  // Render danh sách Trung tâm Y tế
+  ReactDOM.render(
+    <MedicalCenterList
+        apiUrl="{{ url_for('api_medical_centers') }}"
+        detailsUrl="/medical_center_details"
+    />,
+    document.getElementById('react-medical-center-list-root')
+  );
+</script>
 {% endblock %}

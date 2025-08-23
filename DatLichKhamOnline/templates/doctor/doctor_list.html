@@ -11,50 +11,50 @@
   <div class="row">
     {% for doctor_user in doctors %}
     <div class="col-md-4 mb-4">
-      <div class="card h-100 shadow-sm border-0">
-        <div class="text-center pt-3">
-          <img src="{{ doctor_user.avatar or url_for('static', filename='images/default_avatar.jpg') }}"
-               class="rounded-circle"
-               alt="{{ doctor_user.first_name }} {{ doctor_user.last_name }}"
-               style="width: 150px; height: 150px; object-fit: cover;">
-        </div>
-        <div class="card-body text-center d-flex flex-column">
-          <h5 class="card-title mt-2">{{ doctor_user.first_name }} {{ doctor_user.last_name }}</h5>
+      <a href="{{ url_for('doctor_details', doctor_id=doctor_user.id) }}" class="card-link">
+        <div class="card h-100 shadow-sm border-0 card-hover">
+          <div class="text-center pt-3">
+            <img src="{{ doctor_user.avatar or url_for('static', filename='images/default_avatar.jpg') }}"
+                 class="rounded-circle"
+                 alt="{{ doctor_user.first_name }} {{ doctor_user.last_name }}"
+                 style="width: 150px; height: 150px; object-fit: cover;">
+          </div>
+          <div class="card-body text-center d-flex flex-column">
+            <h5 class="card-title mt-2">{{ doctor_user.first_name }} {{ doctor_user.last_name }}</h5>
 
-          {% if doctor_user.doctor %}
-          <p class="card-text text-muted small">
-            <i class="fas fa-stethoscope fa-fw me-1"></i>
-            {% if doctor_user.doctor.doctor_departments %}
-            {{ doctor_user.doctor.doctor_departments | map(attribute='department.name') | join(', ') }}
-            {% else %}
-            Chuyên khoa chưa cập nhật
+            {% if doctor_user.doctor %}
+            {% if doctor_user.doctor.start_year %}
+            <p class="card-text text-muted small">
+              <i class="fas fa-medal fa-fw me-1"></i>
+              <strong>{{ current_year - doctor_user.doctor.start_year }}</strong> năm kinh nghiệm
+            </p>
             {% endif %}
-          </p>
 
-          <p class="card-text text-muted small">
-            <i class="fas fa-hospital fa-fw me-1"></i>
-            {% if doctor_user.doctor.medical_center %}
-            {{ doctor_user.doctor.medical_center.name }}
-            {% else %}
-            Nơi công tác chưa cập nhật
+            <p class="card-text text-muted small">
+              <i class="fas fa-stethoscope fa-fw me-1"></i>
+              {% if doctor_user.doctor.doctor_departments %}
+              {{ doctor_user.doctor.doctor_departments | map(attribute='department.name') | join(', ') }}
+              {% else %}
+              Chuyên khoa chưa cập nhật
+              {% endif %}
+            </p>
+
+            <p class="card-text text-muted small">
+              <i class="fas fa-hospital fa-fw me-1"></i>
+              {% if doctor_user.doctor.medical_center %}
+              {{ doctor_user.doctor.medical_center.name }}
+              {% else %}
+              Nơi công tác chưa cập nhật
+              {% endif %}
+            </p>
             {% endif %}
-          </p>
 
-          {% if doctor_user.doctor.description %}
-          <p class="card-text text-muted small px-2 flex-grow-1">
-            {{ doctor_user.doctor.description | truncate(100) }}
-          </p>
-          {% endif %}
-          {% endif %}
-
-          <div class="mt-auto pt-3">
-            <a href="{{ url_for('book_appointment', doctor_id=doctor_user.id) }}" class="btn btn-primary btn-sm">Đặt
-              Lịch</a>
-            <a href="{{ url_for('doctor_details', doctor_id=doctor_user.id) }}"
-               class="btn btn-outline-secondary btn-sm">Xem Hồ Sơ</a>
+            <div class="mt-auto pt-3">
+              <span class="btn btn-primary btn-sm">Xem Hồ Sơ</span>
+            </div>
           </div>
         </div>
-      </div>
+      </a>
     </div>
     {% endfor %}
   </div>
@@ -64,4 +64,18 @@
   </div>
   {% endif %}
 </div>
+
+<style>
+  .card-link {
+    text-decoration: none;
+    color: inherit;
+  }
+  .card-hover {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  .card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  }
+</style>
 {% endblock %}
