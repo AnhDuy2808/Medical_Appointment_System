@@ -99,14 +99,13 @@ def api_featured_doctors():
             doctor_list.append({
                 'id': user.id,
                 'full_name': f"{user.first_name} {user.last_name}",
-                'avatar': user.avatar,
+                'avatar': user.avatar, # <-- ĐẢM BẢO DÒNG NÀY TỒN TẠI
                 'specialty': ', '.join([dd.department.name for dd in user.doctor.doctor_departments]),
                 'medical_center': user.doctor.medical_center.name if user.doctor.medical_center else None,
                 'experience_years': current_year - user.doctor.start_year if user.doctor.start_year else None
             })
 
     return jsonify(doctor_list)
-
 
 @app.route('/api/medical-centers')
 def api_medical_centers():
