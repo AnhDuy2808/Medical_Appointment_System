@@ -125,26 +125,20 @@ def api_medical_centers():
 @app.route("/search_doctor")
 def search_doctor():
     query = request.args.get('q', '').lower()
-
-    # --- CẬP NHẬT TRUY VẤN ĐỂ TẢI ĐẦY ĐỦ DỮ LIỆU ---
     doctors_query = db.session.query(User).options(
-        # Tải đối tượng Doctor liên quan và các thuộc tính của nó
         subqueryload(User.doctor).options(
-            joinedload(Doctor.medical_center),  # Tải thông tin bệnh viện (nơi công tác)
-            joinedload(Doctor.doctor_departments).joinedload(DoctorDepartment.department)  # Tải chuyên khoa
+            joinedload(Doctor.medical_center),
+            joinedload(Doctor.doctor_departments).joinedload(DoctorDepartment.department)
         )
-    ).join(User.doctor).filter(User.role == UserRole.DOCTOR)  # Luôn join vào Doctor
-
-    # Thêm điều kiện tìm kiếm nếu có
+    ).join(User.doctor).filter(User.role == UserRole.DOCTOR)
     if query:
-        doctors_query = doctors_query.join(Doctor.doctor_departments).join(Department).filter(
-            (User.first_name.ilike(f'%{query}%')) |
-            (User.last_name.ilike(f'%{query}%')) |
-            (Department.name.ilike(f'%{query}%'))
+        # Tìm kiếm theo tên BS, tên khoa, hoặc tên bệnh viện
+        doctors_query = doctors_query.join(Doctor.doctor_departments).join(Department).join(Doctor.medical_center).filter(
+            ((User.first_name + " " + User.last_name).ilike(f'%{query}%')) |
+            (Department.name.ilike(f'%{query}%')) |
+            (MedicalCenter.name.ilike(f'%{query}%'))
         ).distinct()
-
     doctors = doctors_query.all()
-
     return render_template('doctor/doctor_list.html', doctors=doctors)
 
 
