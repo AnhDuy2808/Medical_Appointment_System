@@ -30,6 +30,15 @@ def inject_current_year():
     """Làm cho biến 'current_year' có sẵn trong tất cả các template."""
     return {'current_year': datetime.now().year}
 
+@app.context_processor
+def inject_global_vars():
+    """Làm cho các biến toàn cục có sẵn trong tất cả template."""
+    return {
+        'current_year': datetime.now().year,
+        'current_user': current_user,
+        'datetime': datetime, # Truyền lớp datetime vào template
+        'timedelta': timedelta # Truyền lớp timedelta vào template
+    }
 
 @app.route("/")
 def home():
@@ -40,34 +49,25 @@ def home():
 @app.route("/search")
 def search():
     query = request.args.get('q', '').lower()
-    doctors = (db.session.query(User).join(Doctor).join(DoctorDepartment).join(Department).filter(
-        User.role == "doctor",
-        (User.first_name.ilike(f'%{query}%') | User.last_name.ilike(f'%{query}%') | Department.name.ilike(f'%{query}%'))
-    ).all())
-    medical_centers = db.session.query(MedicalCenter).filter(
-        MedicalCenter.name.ilike(f'%{query}%') | MedicalCenter.description.ilike(f'%{query}%')
-    ).all()
-    return render_template('index.html', doctors=doctors, medical_centers=medical_centers)
+    # Chuyển hướng đến trang danh sách bác sĩ để hiển thị kết quả
+    return redirect(url_for('search_doctor', q=query))
 
 
 @app.route('/api/suggestions')
 def api_suggestions():
     query = request.args.get('q', '').lower()
-    if not query:
+    if not query or len(query) < 2:
         return jsonify([])
 
-    # Tìm bác sĩ
     doctors = db.session.query(User).filter(
         User.role == UserRole.DOCTOR,
         (User.first_name + " " + User.last_name).ilike(f'%{query}%')
     ).limit(5).all()
 
-    # Tìm bệnh viện
     centers = db.session.query(MedicalCenter).filter(
         MedicalCenter.name.ilike(f'%{query}%')
     ).limit(3).all()
 
-    # Tìm chuyên khoa
     departments = db.session.query(Department).filter(
         Department.name.ilike(f'%{query}%')
     ).limit(3).all()
@@ -315,6 +315,7 @@ def forgot_password():
 
 
 @app.route('/book_appointment/<int:doctor_id>', methods=['GET', 'POST'])
+@login_required
 def book_appointment(doctor_id):
     doctor = db.session.query(User).options(
         joinedload(User.doctor).joinedload(Doctor.doctor_departments).joinedload(DoctorDepartment.department),
@@ -344,7 +345,7 @@ def book_appointment(doctor_id):
             flash('Vui lòng điền đầy đủ thông tin và chọn một khung giờ.', 'danger')
             return redirect(url_for('book_appointment', doctor_id=doctor_id, appointment_date=selected_date_str or ''))
 
-        client_id = session.get('user_id')
+        client_id = current_user.id
         if not client_id:
             flash('Bạn cần đăng nhập để đặt lịch.', 'danger')
             return redirect(url_for('user_login'))
@@ -615,6 +616,30 @@ def appointment_history():
 
     return render_template('user/appointment_history.html', tickets=tickets)
 
+@app.route('/cancel_appointment/<int:ticket_id>', methods=['POST'])
+@login_required
+def cancel_appointment(ticket_id):
+    # Tìm vé cần hủy
+    ticket = db.session.query(Ticket).filter_by(id=ticket_id).first()
+
+    # Kiểm tra quyền sở hữu và sự tồn tại của vé
+    if not ticket or ticket.client_id != current_user.id:
+        flash('Lịch hẹn không hợp lệ hoặc bạn không có quyền hủy.', 'danger')
+        return redirect(url_for('appointment_history'))
+
+    # Kết hợp ngày và giờ hẹn thành một đối tượng datetime
+    appointment_datetime = datetime.combine(ticket.doctor_shift.work_date, ticket.doctor_shift.shift.start_time)
+    now = datetime.now()
+
+    # Kiểm tra điều kiện thời gian (phải trước 2 tiếng)
+    if appointment_datetime > now + timedelta(hours=2):
+        ticket.status = TicketStatus.CANCELLED
+        db.session.commit()
+        flash('Hủy lịch hẹn thành công!', 'success')
+    else:
+        flash('Đã quá thời gian cho phép hủy lịch (chỉ được hủy trước 2 tiếng).', 'warning')
+
+    return redirect(url_for('appointment_history'))
 
 @app.route('/doctor/edit_shift/<string:work_date>', methods=['GET', 'POST'])
 def edit_doctor_shift(work_date):
