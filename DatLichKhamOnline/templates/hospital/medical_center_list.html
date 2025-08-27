@@ -21,7 +21,7 @@
             <h5 class="card-title">
               <i class="fas fa-hospital-alt me-2 text-primary"></i>{{ medical_center.name }}
             </h5>
-            <p class="card-text text-muted flex-grow-1">{{ medical_center.description|truncate(100) }}</p>
+            <p class="card-text text-muted">{{ (medical_center.description or '')|truncate(100) }}</p>
             <div class="mt-auto">
               <span class="btn btn-primary w-100">Xem Chi Tiết</span>
             </div>
