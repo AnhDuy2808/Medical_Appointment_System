@@ -5,68 +5,77 @@
 
 {% block content %}
 <div class="container my-5">
-    <h2 class="mb-4 text-center">Thông Tin Cá Nhân</h2>
+  <h2 class="mb-4 text-center">Thông Tin Cá Nhân</h2>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  {% for category, message in messages %}
+  <div class="alert alert-{{ category }}">{{ message }}</div>
+  {% endfor %}
+  {% endif %}
+  {% endwith %}
 
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="card p-4 shadow-sm">
-                {% if user %}
-                <form method="POST" action="{{ url_for('profile') }}">
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" readonly>
-                        <small class="form-text text-muted">Email không thể thay đổi.</small>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label for="first_name">Họ đệm:</label>
-                            <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name or '' }}" required>
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="last_name">Tên:</label>
-                            <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name or '' }}" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="birth_of_day">Ngày sinh:</label>
-                        <input type="date" class="form-control" id="birth_of_day" name="birth_of_day" value="{{ user.birth_of_day.strftime('%Y-%m-%d') if user.birth_of_day else '' }}">
-                    </div>
-                    <div class="form-group">
-                        <label for="gender">Giới tính:</label>
-                        <select class="form-control" id="gender" name="gender">
-                            <option value="">Chọn giới tính</option>
-                            <option value="Male" {% if user.gender == 'Male' %}selected{% endif %}>Nam</option>
-                            <option value="Female" {% if user.gender == 'Female' %}selected{% endif %}>Nữ</option>
-                            <option value="Other" {% if user.gender == 'Other' %}selected{% endif %}>Khác</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="phone">Số điện thoại:</label>
-                        <input type="text" class="form-control" id="phone" name="phone" value="{{ user.phone or '' }}">
-                    </div>
-                    <div class="form-group">
-                        <label for="address">Địa chỉ:</label>
-                        <input type="text" class="form-control" id="address" name="address" value="{{ user.address or '' }}">
-                    </div>
-                    <div class="form-group">
-                        <label for="avatar">URL Ảnh đại diện:</label>
-                        <input type="url" class="form-control" id="avatar" name="avatar" value="{{ user.avatar or '' }}">
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block mt-4">Cập Nhật Thông Tin</button>
-                </form>
-                {% else %}
-                <p class="text-center">Bạn chưa đăng nhập. Vui lòng đăng nhập để xem thông tin cá nhân.</p>
-                {% endif %}
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card p-4 shadow-sm">
+        {% if user %}
+        <form method="POST" action="{{ url_for('profile') }}">
+          <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" readonly>
+            <small class="form-text text-muted">Email không thể thay đổi.</small>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="first_name">Họ đệm:</label>
+              <input type="text" class="form-control" id="first_name" name="first_name"
+                     value="{{ user.first_name or '' }}" required>
             </div>
-        </div>
+            <div class="form-group col-md-6">
+              <label for="last_name">Tên:</label>
+              <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name or '' }}"
+                     required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="birth_of_day">Ngày sinh:</label>
+            <input type="date" class="form-control" id="birth_of_day" name="birth_of_day"
+                   value="{{ user.birth_of_day.strftime('%Y-%m-%d') if user.birth_of_day else '' }}">
+          </div>
+          <div class="form-group">
+            <label for="gender">Giới tính:</label>
+            <select class="form-control" id="gender" name="gender">
+              <option value="">Chọn giới tính</option>
+              <option value="Male" {% if user.gender==
+              'Male' %}selected{% endif %}>Nam</option>
+              <option value="Female" {% if user.gender==
+              'Female' %}selected{% endif %}>Nữ</option>
+              <option value="Other" {% if user.gender==
+              'Other' %}selected{% endif %}>Khác</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="phone">Số điện thoại:</label>
+            <input type="text" class="form-control" id="phone" name="phone" value="{{ user.phone or '' }}">
+          </div>
+          <div class="form-group">
+            <label for="address">Địa chỉ:</label>
+            <input type="text" class="form-control" id="address" name="address" value="{{ user.address or '' }}">
+          </div>
+          <form method="POST" enctype="multipart/form-data">
+            <div class="mb-4">
+              <label for="avatar_file" class="form-label">Thay đổi ảnh đại diện</label>
+              <input class="form-control" type="file" id="avatar_file" name="avatar_file" accept="image/*">
+            </div>
+
+          </form>
+          <button type="submit" class="btn btn-primary btn-block mt-4">Cập Nhật Thông Tin</button>
+        </form>
+        {% else %}
+        <p class="text-center">Bạn chưa đăng nhập. Vui lòng đăng nhập để xem thông tin cá nhân.</p>
+        {% endif %}
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

@@ -1,7 +1,7 @@
 # DatLichKhamOnline/index.py
 import uuid
 from datetime import datetime, date, time, timedelta
-
+from cloudinary import uploader
 from flask import render_template, request, flash, redirect, url_for, session, \
     g  # Import g để lưu biến global cho request
 from sqlalchemy.orm import joinedload, subqueryload
@@ -270,9 +270,6 @@ def logout():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    if g.user:
-        flash("Bạn đã đăng nhập rồi.", "info")
-        return redirect(url_for('home'))
 
     if request.method == "POST":
         first_name = request.form["first_name"]
@@ -465,12 +462,20 @@ def doctor_details(doctor_id):
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
-    if not g.user:
-        flash('Vui lòng đăng nhập để xem thông tin cá nhân.', 'warning')
-        return redirect(url_for('user_login'))
 
-    user = g.user
+    user = current_user
     if request.method == 'POST':
+        if 'avatar_file' in request.files:
+            file = request.files['avatar_file']
+            if file.filename != '':
+                try:
+                    # Tải file lên Cloudinary
+                    upload_result = uploader.upload(file)
+                    # Lấy URL an toàn và gán cho user
+                    user.avatar = upload_result['secure_url']
+                    flash('Cập nhật ảnh đại diện thành công!', 'success')
+                except Exception as e:
+                    flash(f'Lỗi khi tải ảnh lên: {e}', 'danger')
         user.first_name = request.form.get('first_name')
         user.last_name = request.form.get('last_name')
         birth_of_day_str = request.form.get('birth_of_day')
@@ -740,7 +745,15 @@ def doctor_profile():
     doctor_info = g.user.doctor
 
     if request.method == 'POST':
-        # Cập nhật thông tin chung trong model User
+        if 'avatar_file' in request.files:
+            file = request.files['avatar_file']
+            if file.filename != '':
+                try:
+                    upload_result = uploader.upload(file)
+                    current_user.avatar = upload_result['secure_url']
+                    flash('Cập nhật ảnh đại diện thành công!', 'success')
+                except Exception as e:
+                    flash(f'Lỗi khi tải ảnh lên: {e}', 'danger')
         g.user.first_name = request.form.get('first_name')
         g.user.last_name = request.form.get('last_name')
         g.user.phone = request.form.get('phone')
