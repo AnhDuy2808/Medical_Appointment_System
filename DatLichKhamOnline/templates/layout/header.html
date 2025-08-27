@@ -26,7 +26,7 @@
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
              aria-expanded="false">
-            <img src="{{ current_user.avatar or url_for('static', filename='images/default_avatar.jpg') }}" alt="Avatar"
+            <img src="{{ current_user.avatar }}" alt="Avatar"
                  class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
             {{ current_user.first_name }}
           </a>

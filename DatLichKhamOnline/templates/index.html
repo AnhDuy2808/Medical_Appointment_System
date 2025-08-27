@@ -8,7 +8,13 @@
     <h1 class="display-4">Chào mừng đến với Hệ thống Đặt Lịch Khám Online</h1>
     <p class="lead">Tìm kiếm và đặt lịch với những bác sĩ và trung tâm y tế uy tín hàng đầu.</p>
   </div>
-
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  {% for category, message in messages %}
+  <div class="alert alert-{{ category }}">{{ message }}</div>
+  {% endfor %}
+  {% endif %}
+  {% endwith %}
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Bác Sĩ Nổi Bật</h2>
     <a href="{{ url_for('search_doctor') }}" class="btn btn-outline-primary">Xem tất cả</a>

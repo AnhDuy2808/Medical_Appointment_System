@@ -20,9 +20,9 @@ from DatLichKhamOnline.admin import admin
 # def load_logged_in_user():
 #     user_id = session.get('user_id')
 #     if user_id is None:
-#         g.user = None
+#         current_user = None
 #     else:
-#         g.user = db.session.get(User, user_id)
+#         current_user = db.session.get(User, user_id)
 
 
 @app.context_processor
@@ -197,7 +197,7 @@ def user_login():
 @app.route('/doctor/dashboard', methods=['GET', 'POST'])
 def doctor_dashboard():
     # Bảo vệ route: Chỉ bác sĩ mới được truy cập
-    if not g.user or g.user.role != UserRole.DOCTOR:
+    if not current_user or current_user.role != UserRole.DOCTOR:
         flash('Bạn không có quyền truy cập trang này.', 'danger')
         return redirect(url_for('home'))
 
@@ -213,14 +213,14 @@ def doctor_dashboard():
             new_shifts_count = 0
             for shift_id in selected_shift_ids:
                 existing_shift = db.session.query(DoctorShift).filter_by(
-                    doctor_id=g.user.id,
+                    doctor_id=current_user.id,
                     shift_id=int(shift_id),
                     work_date=work_date
                 ).first()
 
                 if not existing_shift:
                     new_doctor_shift = DoctorShift(
-                        doctor_id=g.user.id,
+                        doctor_id=current_user.id,
                         shift_id=int(shift_id),
                         work_date=work_date
                     )
@@ -241,7 +241,7 @@ def doctor_dashboard():
     all_shifts = db.session.query(Shift).order_by(Shift.start_time).all()
 
     registered_shifts = db.session.query(DoctorShift).join(Shift).filter(
-        DoctorShift.doctor_id == g.user.id,
+        DoctorShift.doctor_id == current_user.id,
         DoctorShift.work_date >= date.today()
     ).order_by(DoctorShift.work_date, Shift.start_time).all()
 
@@ -297,7 +297,7 @@ def register():
 
 @app.route("/forgot_password", methods=["GET", "POST"])
 def forgot_password():
-    if g.user:
+    if current_user:
         flash("Bạn đã đăng nhập rồi.", "info")
         return redirect(url_for('home'))
 
@@ -416,7 +416,7 @@ def book_appointment(doctor_id):
         if afternoon_shifts:
             current_date_shifts['Buổi Chiều'] = afternoon_shifts
 
-    current_user_info = g.user
+    current_user_info = current_user
 
     return render_template('doctor/book_appointment.html',
                            doctor=doctor,
@@ -465,17 +465,28 @@ def profile():
 
     user = current_user
     if request.method == 'POST':
+        print("=" * 30)
+        print("ĐÃ NHẬN ĐƯỢC YÊU CẦU POST TỚI /profile")
+        print("Dữ liệu form nhận được:", request.form)
+        print("Dữ liệu file nhận được:", request.files)
         if 'avatar_file' in request.files:
+            print(">>> Đã tìm thấy key 'avatar_file' trong request.files.")
             file = request.files['avatar_file']
-            if file.filename != '':
+
+            if file and file.filename != '':
+                print(f"==> Tên file hợp lệ: '{file.filename}'. Bắt đầu tải lên Cloudinary...")
                 try:
-                    # Tải file lên Cloudinary
                     upload_result = uploader.upload(file)
-                    # Lấy URL an toàn và gán cho user
                     user.avatar = upload_result['secure_url']
                     flash('Cập nhật ảnh đại diện thành công!', 'success')
                 except Exception as e:
                     flash(f'Lỗi khi tải ảnh lên: {e}', 'danger')
+            else:
+                print("!!! File tồn tại nhưng không có tên file (người dùng chưa chọn file).")
+        else:
+            print("XXX KHÔNG TÌM THẤY key 'avatar_file' trong request.files. Các key có sẵn là:",
+                  list(request.files.keys()))
+
         user.first_name = request.form.get('first_name')
         user.last_name = request.form.get('last_name')
         birth_of_day_str = request.form.get('birth_of_day')
@@ -487,12 +498,15 @@ def profile():
         user.phone = request.form.get('phone')
         user.address = request.form.get('address')
 
+        print(user)
+
         try:
             db.session.commit()
             flash('Cập nhật thông tin cá nhân thành công!', 'success')
         except Exception as e:
             db.session.rollback()
             flash(f'Lỗi khi cập nhật thông tin: {e}', 'danger')
+
         return redirect(url_for('profile'))
     return render_template('user/profile.html', user=user)
 
@@ -577,7 +591,7 @@ def payment_ipn():
 @app.route('/appointment_history')
 def appointment_history():
     # Check if the user is logged in
-    if not g.user:
+    if not current_user:
         flash('Vui lòng đăng nhập để xem lịch sử đặt khám.', 'warning')
         return redirect(url_for('user_login'))
 
@@ -590,7 +604,7 @@ def appointment_history():
         joinedload(Ticket.doctor_shift).joinedload(DoctorShift.doctor).joinedload(Doctor.doctor_departments).joinedload(
             DoctorDepartment.department)
     ).filter(
-        Ticket.client_id == g.user.id
+        Ticket.client_id == current_user.id
     ).join(
         DoctorShift, Ticket.doctor_shift_id == DoctorShift.id
     ).join(
@@ -604,7 +618,7 @@ def appointment_history():
 
 @app.route('/doctor/edit_shift/<string:work_date>', methods=['GET', 'POST'])
 def edit_doctor_shift(work_date):
-    if not g.user or g.user.role != UserRole.DOCTOR:
+    if not current_user or current_user.role != UserRole.DOCTOR:
         flash('Bạn không có quyền truy cập trang này.', 'danger')
         return redirect(url_for('home'))
 
@@ -619,7 +633,7 @@ def edit_doctor_shift(work_date):
         selected_shift_ids = {int(id) for id in request.form.getlist('shift_ids')}
 
         # Lấy danh sách ID các ca đã đăng ký trước đó trong ngày
-        existing_shifts = db.session.query(DoctorShift).filter_by(doctor_id=g.user.id, work_date=work_date_obj).all()
+        existing_shifts = db.session.query(DoctorShift).filter_by(doctor_id=current_user.id, work_date=work_date_obj).all()
         existing_shift_ids = {ds.shift_id for ds in existing_shifts}
 
         # Ca cần thêm mới = ca được chọn NHƯNG chưa có trong DB
@@ -631,12 +645,12 @@ def edit_doctor_shift(work_date):
         for shift_id in shifts_to_add:
             # Kiểm tra xem ca này đã có người đặt chưa (an toàn)
             has_ticket = db.session.query(Ticket).join(DoctorShift).filter(
-                DoctorShift.doctor_id == g.user.id,
+                DoctorShift.doctor_id == current_user.id,
                 DoctorShift.work_date == work_date_obj,
                 DoctorShift.shift_id == shift_id
             ).first()
             if not has_ticket:
-                db.session.add(DoctorShift(doctor_id=g.user.id, shift_id=shift_id, work_date=work_date_obj))
+                db.session.add(DoctorShift(doctor_id=current_user.id, shift_id=shift_id, work_date=work_date_obj))
 
         # Xóa ca cũ
         for shift_id in shifts_to_delete:
@@ -651,7 +665,7 @@ def edit_doctor_shift(work_date):
 
     # Logic cho GET request
     all_shifts = db.session.query(Shift).order_by(Shift.start_time).all()
-    registered_shifts_for_date = db.session.query(DoctorShift).filter_by(doctor_id=g.user.id,
+    registered_shifts_for_date = db.session.query(DoctorShift).filter_by(doctor_id=current_user.id,
                                                                          work_date=work_date_obj).all()
     registered_shift_ids = {ds.shift_id for ds in registered_shifts_for_date}
 
@@ -663,7 +677,7 @@ def edit_doctor_shift(work_date):
 
 @app.route('/doctor/delete_shifts_by_date/<string:work_date>', methods=['POST'])
 def delete_doctor_shifts_by_date(work_date):
-    if not g.user or g.user.role != UserRole.DOCTOR:
+    if not current_user or current_user.role != UserRole.DOCTOR:
         flash('Bạn không có quyền truy cập trang này.', 'danger')
         return redirect(url_for('home'))
 
@@ -675,7 +689,7 @@ def delete_doctor_shifts_by_date(work_date):
 
     # Lấy tất cả ca làm việc trong ngày của bác sĩ
     shifts_to_delete = db.session.query(DoctorShift).filter_by(
-        doctor_id=g.user.id,
+        doctor_id=current_user.id,
         work_date=work_date_obj
     ).all()
 
@@ -701,7 +715,7 @@ def delete_doctor_shifts_by_date(work_date):
 @app.route('/doctor/appointments')
 def doctor_appointments():
     # Bảo vệ route, chỉ bác sĩ mới được vào
-    if not g.user or g.user.role != UserRole.DOCTOR:
+    if not current_user or current_user.role != UserRole.DOCTOR:
         flash('Bạn không có quyền truy cập trang này.', 'danger')
         return redirect(url_for('home'))
 
@@ -716,7 +730,7 @@ def doctor_appointments():
 
     # Xây dựng câu truy vấn cơ bản
     query = db.session.query(Ticket).join(DoctorShift).filter(
-        DoctorShift.doctor_id == g.user.id
+        DoctorShift.doctor_id == current_user.id
     )
 
     # Thêm điều kiện lọc theo ngày nếu có
@@ -737,12 +751,12 @@ def doctor_appointments():
 @app.route('/doctor/profile', methods=['GET', 'POST'])
 def doctor_profile():
     # Bảo vệ route, chỉ bác sĩ mới được vào
-    if not g.user or g.user.role != UserRole.DOCTOR:
+    if not current_user or current_user.role != UserRole.DOCTOR:
         flash('Bạn không có quyền truy cập trang này.', 'danger')
         return redirect(url_for('home'))
 
     # Lấy thông tin bác sĩ từ thông tin người dùng
-    doctor_info = g.user.doctor
+    doctor_info = current_user.doctor
 
     if request.method == 'POST':
         if 'avatar_file' in request.files:
@@ -754,10 +768,10 @@ def doctor_profile():
                     flash('Cập nhật ảnh đại diện thành công!', 'success')
                 except Exception as e:
                     flash(f'Lỗi khi tải ảnh lên: {e}', 'danger')
-        g.user.first_name = request.form.get('first_name')
-        g.user.last_name = request.form.get('last_name')
-        g.user.phone = request.form.get('phone')
-        g.user.address = request.form.get('address')
+        current_user.first_name = request.form.get('first_name')
+        current_user.last_name = request.form.get('last_name')
+        current_user.phone = request.form.get('phone')
+        current_user.address = request.form.get('address')
 
         # Cập nhật thông tin chuyên môn trong model Doctor
         if doctor_info:
@@ -777,7 +791,7 @@ def doctor_profile():
     # Lấy danh sách các trung tâm y tế để hiển thị trong dropdown
     medical_centers = db.session.query(MedicalCenter).all()
 
-    return render_template('doctor/profile.html', user=g.user, doctor=doctor_info, medical_centers=medical_centers)
+    return render_template('doctor/profile.html', user=current_user, doctor=doctor_info, medical_centers=medical_centers)
 
 
 @login.user_loader

@@ -19,7 +19,7 @@
     <div class="col-md-8 col-lg-6">
       <div class="card p-4 shadow-sm">
         {% if user %}
-        <form method="POST" action="{{ url_for('profile') }}">
+        <form method="POST" action="{{ url_for('profile') }}" enctype="multipart/form-data">
           <div class="form-group">
             <label for="email">Email:</label>
             <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" readonly>
@@ -62,14 +62,13 @@
             <label for="address">Địa chỉ:</label>
             <input type="text" class="form-control" id="address" name="address" value="{{ user.address or '' }}">
           </div>
-          <form method="POST" enctype="multipart/form-data">
+          <div class="form-group">
             <div class="mb-4">
               <label for="avatar_file" class="form-label">Thay đổi ảnh đại diện</label>
               <input class="form-control" type="file" id="avatar_file" name="avatar_file" accept="image/*">
             </div>
 
-          </form>
-          <button type="submit" class="btn btn-primary btn-block mt-4">Cập Nhật Thông Tin</button>
+            <button type="submit" class="btn btn-primary btn-block mt-4">Cập Nhật Thông Tin</button>
         </form>
         {% else %}
         <p class="text-center">Bạn chưa đăng nhập. Vui lòng đăng nhập để xem thông tin cá nhân.</p>
