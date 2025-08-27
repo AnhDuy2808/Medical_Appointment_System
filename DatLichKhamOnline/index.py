@@ -772,15 +772,8 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
-# --- THAY THẾ HÀM @app.before_request CŨ BẰNG HÀM NÀY ---
-@app.before_request
-def before_request():
-    # Gán current_user vào g.user để các template cũ vẫn hoạt động
-    g.user = current_user
-    # Thêm hàm now() vào context của template
-    app.jinja_env.globals['now'] = datetime.now
 
 
 if __name__ == '__main__':
-    app.secret_key = 'your_secret_key'
+    app.config['SECRET_KEY'] = "@%%@@^$!@$%%#@%%@PHAD%@$#$&*&"
     app.run(debug=True)
