@@ -388,7 +388,7 @@ if __name__ == '__main__':
                         )
                     new_doctor = Doctor(
                         id=new_user.id,
-                        description=row.get('Introduce', ''),
+                        description=row.get('description', ''),
                         start_year=int(row['start_year']) if row.get('start_year') else None,
                         medical_center_id=mc_id
                     )
