@@ -6,9 +6,9 @@
 
   <div class="navbar-nav">
     <div class="nav-item text-nowrap d-flex align-items-center">
-      {% if g.user %}
+      {% if current_user %}
       <span class="navbar-text me-3">
-                    Chào, Bác sĩ {{ g.user.first_name }}
+                    Chào, Bác sĩ {{ current_user.first_name }}
                 </span>
       <a class="nav-link px-3" href="{{ url_for('logout') }}">
         <i class="fas fa-sign-out-alt me-1"></i>
