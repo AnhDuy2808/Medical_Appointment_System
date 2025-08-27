@@ -22,7 +22,6 @@
              href="{{ url_for('search_medical_center') }}">Cơ sở Y tế</a>
         </li>
 
-        {# SỬ DỤNG current_user THAY VÌ g.user #}
         {% if current_user.is_authenticated %}
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
